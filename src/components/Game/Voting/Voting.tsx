@@ -2,13 +2,21 @@ import { useAtomValue } from "jotai"
 import { $yourPlayer, $currentTurn, $round, $playersInfo } from "../../../state/$state"
 import styled, { css } from "styled-components/macro"
 import { rel } from "../../../style/rel"
-import { memo, useState, useEffect } from "react"
+import { memo, useState, useEffect, useRef } from "react"
 import { votingDuration } from "../../../logic"
 import { LineTimer } from "../../Timer/LineTimer"
 import { sounds } from "../../../sounds/sounds"
 
 // Countdown timer component to show remaining time
-const CountdownTimer = memo(({ startedAt, duration }: { startedAt: number, duration: number }) => {
+const CountdownTimer = memo(({
+  startedAt,
+  duration,
+  onTimeUp
+}: {
+  startedAt: number,
+  duration: number,
+  onTimeUp?: () => void
+}) => {
   const [timeLeft, setTimeLeft] = useState(Math.max(0, Math.ceil(duration - (Rune.gameTime() / 1000 - startedAt))))
 
   useEffect(() => {
@@ -18,11 +26,14 @@ const CountdownTimer = memo(({ startedAt, duration }: { startedAt: number, durat
 
       if (newTimeLeft <= 0) {
         clearInterval(interval)
+        if (onTimeUp) {
+          onTimeUp()
+        }
       }
     }, 1000)
 
     return () => clearInterval(interval)
-  }, [startedAt, duration])
+  }, [startedAt, duration, onTimeUp])
 
   return <span>{timeLeft}s</span>
 })
@@ -33,6 +44,12 @@ export const Voting = memo(() => {
   const round = useAtomValue($round)
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
   const [hasVoted, setHasVoted] = useState(false)
+  const [autoVoted, setAutoVoted] = useState(false)
+  const [timeRemaining, setTimeRemaining] = useState(votingDuration)
+
+  // Use a ref to store the currently selected player ID
+  // This will be accessible even when the component is about to unmount
+  const selectedPlayerIdRef = useRef<string | null>(null)
 
   // Reset selection when round changes
   useEffect(() => {
@@ -46,6 +63,68 @@ export const Voting = memo(() => {
       setHasVoted(true)
     }
   }, [yourPlayer])
+
+  // Update the ref whenever selectedPlayerId changes
+  useEffect(() => {
+    selectedPlayerIdRef.current = selectedPlayerId;
+  }, [selectedPlayerId]);
+
+  // Monitor the timer and auto-submit vote when time is about to expire
+  useEffect(() => {
+    if (!currentTurn) return;
+
+    const interval = setInterval(() => {
+      const currentTime = Rune.gameTime() / 1000;
+      const elapsed = currentTime - (currentTurn.timerStartedAt || 0);
+      const remaining = Math.max(0, votingDuration - elapsed);
+
+      setTimeRemaining(remaining);
+
+      // Auto-submit vote 1 second before timer expires if player has selected but not voted
+      if (remaining <= 1 && selectedPlayerIdRef.current && !hasVoted) {
+        try {
+          // Auto-submit the currently selected player
+          Rune.actions?.submitVote?.({
+            suspectId: selectedPlayerIdRef.current,
+            round
+          });
+
+          // Play sound
+          sounds.guessButton.play();
+
+          // Update local state
+          setHasVoted(true);
+          setAutoVoted(true);
+
+          console.log("Time's almost up! Your vote was automatically submitted.");
+        } catch (error) {
+          console.error("Failed to auto-submit vote:", error);
+        }
+
+        clearInterval(interval);
+      }
+    }, 100); // Check more frequently
+
+    return () => clearInterval(interval);
+  }, [currentTurn, hasVoted, round]);
+
+  // Final safety check - submit vote when component is about to unmount if not voted yet
+  useEffect(() => {
+    return () => {
+      if (currentTurn?.stage === "voting" && selectedPlayerIdRef.current && !hasVoted) {
+        try {
+          // Last chance to submit the vote before unmounting
+          Rune.actions?.submitVote?.({
+            suspectId: selectedPlayerIdRef.current,
+            round
+          });
+          console.log("Component unmounting - final vote submission");
+        } catch (error) {
+          console.error("Failed to submit vote on unmount:", error);
+        }
+      }
+    };
+  }, [currentTurn, hasVoted, round]);
 
   const handleVote = () => {
     if (!selectedPlayerId || hasVoted) return
@@ -61,6 +140,31 @@ export const Voting = memo(() => {
 
     // Update local state
     setHasVoted(true)
+  }
+
+  // Handle timer expiration - auto-submit the current selection
+  const handleTimeUp = () => {
+    if (selectedPlayerIdRef.current && !hasVoted) {
+      try {
+        // Auto-submit the currently selected player
+        Rune.actions?.submitVote?.({
+          suspectId: selectedPlayerIdRef.current,
+          round
+        });
+
+        // Play sound
+        sounds.guessButton.play();
+
+        // Update local state
+        setHasVoted(true);
+        setAutoVoted(true);
+
+        // Show a notification that the vote was automatically submitted
+        console.log("Time's up! Your vote was automatically submitted.");
+      } catch (error) {
+        console.error("Failed to auto-submit vote in handleTimeUp:", error);
+      }
+    }
   }
 
   // Get all players except yourself
@@ -86,7 +190,11 @@ export const Voting = memo(() => {
       <Title>Who is the Impostor?</Title>
       <Subtitle>Vote for the player who you think had a different word</Subtitle>
       <RemainingTime>
-        Time remaining: <CountdownTimer startedAt={currentTurn?.timerStartedAt || 0} duration={votingDuration} />
+        Time remaining: <CountdownTimer
+          startedAt={currentTurn?.timerStartedAt || 0}
+          duration={votingDuration}
+          onTimeUp={handleTimeUp}
+        />
       </RemainingTime>
 
       <PlayerList>
@@ -108,17 +216,25 @@ export const Voting = memo(() => {
         ))}
       </PlayerList>
 
-      <VoteButton
-        disabled={!selectedPlayerId || hasVoted}
-        onClick={handleVote}
-      >
-        {hasVoted ? "Vote Submitted" : "Submit Vote"}
-      </VoteButton>
+      {!hasVoted && (
+        <VoteButton
+          disabled={!selectedPlayerId}
+          onClick={handleVote}
+        >
+          Lock in Vote
+        </VoteButton>
+      )}
 
       {hasVoted && (
-        <WaitingText>
-          Waiting for other players to vote...
-        </WaitingText>
+        <>
+          <LockedVoteMessage>
+            Your vote for <strong>{playersInfo[selectedPlayerId || ""]?.displayName}</strong> is locked in
+            {autoVoted && <AutoVoteText>(Auto-submitted as time expired)</AutoVoteText>}
+          </LockedVoteMessage>
+          <WaitingText>
+            Waiting for other players to vote...
+          </WaitingText>
+        </>
       )}
     </Root>
   )
@@ -225,8 +341,20 @@ const VoteButton = styled.button<{ disabled: boolean }>`
 const WaitingText = styled.div`
   font-size: ${rel(16)};
   color: #e4faff;
-  margin-top: ${rel(16)};
+  margin-top: ${rel(8)};
   font-style: italic;
+`
+
+const LockedVoteMessage = styled.div`
+  font-size: ${rel(18)};
+  color: #5bb600;
+  margin-top: ${rel(16)};
+  font-weight: bold;
+  text-align: center;
+
+  strong {
+    color: #7dd700;
+  }
 `
 
 const RemainingTime = styled.div`
@@ -238,4 +366,11 @@ const RemainingTime = styled.div`
   span {
     color: #ff9900;
   }
+`
+
+const AutoVoteText = styled.div`
+  font-size: ${rel(14)};
+  color: #ffcc00;
+  margin-top: ${rel(4)};
+  font-style: italic;
 `

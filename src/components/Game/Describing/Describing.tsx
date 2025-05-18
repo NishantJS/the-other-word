@@ -9,7 +9,15 @@ import { LineTimer } from "../../Timer/LineTimer"
 import speakingAnimation from "../lottie/speaking.json"
 
 // Countdown timer component to show remaining time
-const CountdownTimer = memo(({ startedAt, duration }: { startedAt: number, duration: number }) => {
+const CountdownTimer = memo(({
+  startedAt,
+  duration,
+  onTimeUp
+}: {
+  startedAt: number,
+  duration: number,
+  onTimeUp?: () => void
+}) => {
   const [timeLeft, setTimeLeft] = useState(Math.max(0, Math.ceil(duration - (Rune.gameTime() / 1000 - startedAt))))
 
   useEffect(() => {
@@ -19,11 +27,14 @@ const CountdownTimer = memo(({ startedAt, duration }: { startedAt: number, durat
 
       if (newTimeLeft <= 0) {
         clearInterval(interval)
+        if (onTimeUp) {
+          onTimeUp()
+        }
       }
     }, 1000)
 
     return () => clearInterval(interval)
-  }, [startedAt, duration])
+  }, [startedAt, duration, onTimeUp])
 
   return <span>{timeLeft}s</span>
 })
@@ -31,6 +42,13 @@ const CountdownTimer = memo(({ startedAt, duration }: { startedAt: number, durat
 export const Describing = memo(() => {
   const yourPlayer = useAtomValue($yourPlayer)
   const currentTurn = useAtomValue($currentTurn)
+
+  // Function to handle auto-finish when time is up
+  const handleTimeUp = () => {
+    if (yourPlayer?.describing) {
+      Rune.actions?.finishDescribing?.()
+    }
+  }
 
   // If player is not describing, show a spectating view
   if (!yourPlayer?.describing) {
@@ -51,7 +69,11 @@ export const Describing = memo(() => {
 
       <Label>Describe this word!</Label>
       <RemainingTime>
-        Time remaining: <CountdownTimer startedAt={currentTurn?.timerStartedAt || 0} duration={descriptionDuration} />
+        Time remaining: <CountdownTimer
+          startedAt={currentTurn?.timerStartedAt || 0}
+          duration={descriptionDuration}
+          onTimeUp={handleTimeUp}
+        />
       </RemainingTime>
       <div style={{ height: rel(15) }} />
       <SpeakingHead autoplay loop src={speakingAnimation} />
@@ -63,8 +85,8 @@ export const Describing = memo(() => {
       <Instructions>
         <p>Describe this word to other players using voice chat.</p>
         <p>Be careful! One player has a slightly different word.</p>
-        <p>You have 10 seconds to describe your word.</p>
-        <p>Try to be clear but don't be too obvious if you're the impostor!</p>
+        <p>You have 15 seconds to describe your word.</p>
+        <p>Try to be clear but not too specific with your description.</p>
       </Instructions>
 
       <div style={{ height: rel(30) }} />
@@ -115,7 +137,7 @@ const SpectatingView = memo(() => {
       <Instructions>
         <p>Listen carefully to {describingPlayer.displayName}'s description.</p>
         <p>Try to identify if they have a different word than others.</p>
-        <p>Each player has 10 seconds to describe their word.</p>
+        <p>Each player has 15 seconds to describe their word.</p>
         <p>After everyone has spoken, you'll vote on who you think is the impostor.</p>
       </Instructions>
     </Root>

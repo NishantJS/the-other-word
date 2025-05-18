@@ -50,14 +50,10 @@ const Root = styled.div<{ isImpostor?: boolean }>`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  ${({ isImpostor }) =>
-    isImpostor &&
-    css`
-      background: radial-gradient(
-        62.56% 62.56% at 50% 44.09%,
-        #bc5287 0%,
-        #24083a 81.77%,
-        #24083a 100%
-      );
-    `};
+  background: radial-gradient(
+    62.56% 62.56% at 50% 44.09%,
+    #bc5287 0%,
+    #24083a 81.77%,
+    #24083a 100%
+  );
 `

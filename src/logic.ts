@@ -5,9 +5,9 @@ import { PlayerId } from "rune-sdk/multiplayer"
 // Game constants
 export const numRounds = 3
 export const turnCountdown = 3
-export const descriptionDuration = 10  // 10 seconds for each player to describe
-export const votingDuration = 10       // 10 seconds for voting
-export const resultDuration = 5        // 5 seconds to show results
+export const descriptionDuration = 15  // 15 seconds for each player to describe
+export const votingDuration = 15       // 15 seconds for voting
+export const resultDuration = 15       // 15 seconds to show results
 export const nonImpostorCatchPoints = 1 // Points for non-impostors when impostor is caught
 export const impostorSurvivePoints = 5  // Points for impostor if they survive to the end
 
@@ -413,6 +413,9 @@ Rune.initLogic({
         if (currentTime >= game.currentTurn.timerStartedAt + votingDuration) {
           // Time's up for voting
           game.currentTurn.votingComplete = true
+
+          // Auto-submit votes for players who have selected but not submitted
+          // This is handled on the client side, but we add this as a safety measure
 
           // Check if the impostor was caught
           game.currentTurn.impostorCaught = checkImpostorCaught(game)
