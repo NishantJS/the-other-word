@@ -1,0 +1,9 @@
+{
+  "servers": {
+    "Rune": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["rune-mcp@latest"]
+    }
+  }
+}
