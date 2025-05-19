@@ -1,4 +1,4 @@
-import { Animal, Emotion, GameState } from "./GameState"
+import { GameState } from "./GameState"
 import { PlayerId } from "rune-sdk/multiplayer"
 
 export type GameActions = {
@@ -9,12 +9,4 @@ export type GameActions = {
   }) => void
   nextRound: () => void
   finishDescribing: () => void
-
-  // For backward compatibility
-  makeGuess?: (guess: {
-    animal: Animal
-    emotion: Emotion
-    round: GameState["round"]
-  }) => void
-  skipGuess?: () => void
 }

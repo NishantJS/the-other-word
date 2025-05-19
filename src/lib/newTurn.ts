@@ -1,6 +1,4 @@
 import { GameState } from "./types/GameState"
-import { getRandomItem } from "./getRandomItem"
-import { animals, emotions } from "./types/GameState"
 
 export function newTurn(game: GameState) {
   // Create a random order for descriptions
@@ -15,10 +13,5 @@ export function newTurn(game: GameState) {
     votingComplete: false,
     impostorCaught: false,
     remainingPlayers: game.players.length,
-    // For backward compatibility
-    animal: getRandomItem(animals),
-    emotion: getRandomItem(emotions),
-    latestActingStartedAt: Rune.gameTime() / 1000,
-    showSkipGuessButton: false,
   }
 }

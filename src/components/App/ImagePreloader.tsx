@@ -1,7 +1,6 @@
 import { useAtomValue } from "jotai"
 import { $players } from "../../state/$state"
 import { useEffect, useMemo, memo } from "react"
-import { art } from "../Game/art/art"
 
 export const ImagePreloader = memo(() => {
   const players = useAtomValue($players)
@@ -13,11 +12,6 @@ export const ImagePreloader = memo(() => {
   useEffect(() => {
     playerAvatars.forEach(preload)
   }, [playerAvatars])
-
-  useEffect(() => {
-    Object.values(art.animals).forEach(preload)
-    Object.values(art.emotions).forEach(preload)
-  }, [])
 
   return null
 })

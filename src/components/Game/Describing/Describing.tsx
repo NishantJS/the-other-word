@@ -2,11 +2,10 @@ import { useAtomValue } from "jotai"
 import { $yourPlayer, $currentTurn, $playersInfo } from "../../../state/$state"
 import styled from "styled-components/macro"
 import { rel } from "../../../style/rel"
-import { Player } from "@lottiefiles/react-lottie-player"
 import { memo, useEffect, useState } from "react"
 import { descriptionDuration } from "../../../logic"
 import { LineTimer } from "../../Timer/LineTimer"
-import speakingAnimation from "../lottie/speaking.json"
+// Lottie animations removed to clean up the project
 
 // Countdown timer component to show remaining time
 const CountdownTimer = memo(({
@@ -76,7 +75,7 @@ export const Describing = memo(() => {
         />
       </RemainingTime>
       <div style={{ height: rel(15) }} />
-      <SpeakingHead autoplay loop src={speakingAnimation} />
+      <SpeakingIcon>🎤</SpeakingIcon>
       <div style={{ height: rel(15) }} />
 
       <SecretWord>{yourPlayer.secretWord}</SecretWord>
@@ -100,13 +99,29 @@ export const Describing = memo(() => {
 // Component shown to players who are not currently describing
 const SpectatingView = memo(() => {
   const currentTurn = useAtomValue($currentTurn)
+  const yourPlayer = useAtomValue($yourPlayer)
 
   // Find the current describing player
   const describingPlayerId = currentTurn?.currentDescriberId
+  const nextDescriberId = currentTurn?.nextDescriberId
+  const previousDescriberId = currentTurn?.previousDescriberId
+  const completedDescribers = currentTurn?.completedDescribers || []
+
   const playersInfo = useAtomValue($playersInfo)
+
   const describingPlayer = describingPlayerId && playersInfo
     ? playersInfo[describingPlayerId]
     : null
+
+  const nextPlayer = nextDescriberId && playersInfo
+    ? playersInfo[nextDescriberId]
+    : null
+
+  const previousPlayer = previousDescriberId && playersInfo
+    ? playersInfo[previousDescriberId]
+    : null
+
+  const isNextPlayer = nextDescriberId === yourPlayer?.id
 
   if (!describingPlayer) return null
 
@@ -127,17 +142,48 @@ const SpectatingView = memo(() => {
       </RemainingTime>
       <div style={{ height: rel(15) }} />
 
+      {/* Current speaker */}
       <PlayerInfo>
-        <AvatarImg src={describingPlayer.avatarUrl} />
-        <PlayerName>{describingPlayer.displayName} is describing</PlayerName>
+        <CurrentSpeakerBadge>
+          <AvatarImg src={describingPlayer.avatarUrl} />
+          <PlayerName>{describingPlayer.displayName} is speaking</PlayerName>
+          <SpeakingIcon>🎤</SpeakingIcon>
+        </CurrentSpeakerBadge>
       </PlayerInfo>
 
-      <div style={{ height: rel(30) }} />
+      {/* Next speaker notification */}
+      {isNextPlayer && (
+        <NextSpeakerAlert>
+          <AlertIcon>⚠️</AlertIcon>
+          You're speaking next! Get ready!
+        </NextSpeakerAlert>
+      )}
+
+      {/* Speaking order visualization */}
+      <SpeakingOrderContainer>
+        {previousPlayer && (
+          <SpeakerItem completed>
+            <SmallAvatar src={previousPlayer.avatarUrl} />
+            <SmallName>Previous</SmallName>
+          </SpeakerItem>
+        )}
+
+        <SpeakerItem current>
+          <SmallAvatar src={describingPlayer.avatarUrl} />
+          <SmallName>Current</SmallName>
+        </SpeakerItem>
+
+        {nextPlayer && (
+          <SpeakerItem next={isNextPlayer}>
+            <SmallAvatar src={nextPlayer.avatarUrl} />
+            <SmallName>{isNextPlayer ? "YOU'RE NEXT" : "Next"}</SmallName>
+          </SpeakerItem>
+        )}
+      </SpeakingOrderContainer>
 
       <Instructions>
         <p>Listen carefully to {describingPlayer.displayName}'s description.</p>
         <p>Try to identify if they have a different word than others.</p>
-        <p>Each player has 15 seconds to describe their word.</p>
         <p>After everyone has spoken, you'll vote on who you think is the impostor.</p>
       </Instructions>
     </Root>
@@ -167,8 +213,12 @@ const Label = styled.div`
   text-align: center;
 `
 
-const SpeakingHead = styled(Player)`
+const SpeakingIcon = styled.div`
+  font-size: ${rel(60)};
   height: ${rel(60)};
+  display: flex;
+  align-items: center;
+  justify-content: center;
 `
 
 const SecretWord = styled.div`
@@ -241,3 +291,107 @@ const RemainingTime = styled.div`
     color: #ff9900;
   }
 `
+
+const CurrentSpeakerBadge = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: rgba(92, 45, 145, 0.6);
+  padding: ${rel(15)};
+  border-radius: ${rel(15)};
+  border: ${rel(2)} solid #8a4dff;
+  box-shadow: 0 ${rel(4)} ${rel(8)} rgba(0, 0, 0, 0.3);
+`
+
+const NextSpeakerAlert = styled.div`
+  display: flex;
+  align-items: center;
+  background-color: #ff9900;
+  color: #fff;
+  font-weight: bold;
+  padding: ${rel(10)} ${rel(15)};
+  border-radius: ${rel(10)};
+  margin: ${rel(15)} 0;
+  animation: pulse 1.5s infinite;
+  box-shadow: 0 ${rel(4)} ${rel(8)} rgba(0, 0, 0, 0.3);
+
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+`
+
+const AlertIcon = styled.span`
+  font-size: ${rel(24)};
+  margin-right: ${rel(10)};
+`
+
+const SpeakingOrderContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: ${rel(20)} 0;
+  width: 100%;
+  position: relative;
+
+  &:before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 15%;
+    right: 15%;
+    height: ${rel(2)};
+    background-color: rgba(255, 255, 255, 0.3);
+    z-index: 0;
+  }
+`
+
+const SpeakerItem = styled.div<{ current?: boolean; next?: boolean; completed?: boolean }>`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0 ${rel(10)};
+  position: relative;
+  z-index: 1;
+
+  ${props => props.current && `
+    transform: scale(1.2);
+    z-index: 2;
+  `}
+
+  ${props => props.next && `
+    animation: highlight 1.5s infinite;
+    @keyframes highlight {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+  `}
+
+  ${props => props.completed && `
+    opacity: 0.7;
+  `}
+`
+
+const SmallAvatar = styled.img`
+  width: ${rel(40)};
+  height: ${rel(40)};
+  border-radius: 50%;
+  border: ${rel(2)} solid white;
+  background-color: #333;
+  box-shadow: 0 ${rel(2)} ${rel(4)} rgba(0, 0, 0, 0.3);
+`
+
+const SmallName = styled.div`
+  font-size: ${rel(12)};
+  color: white;
+  margin-top: ${rel(5)};
+  text-align: center;
+  background-color: rgba(0, 0, 0, 0.5);
+  padding: ${rel(2)} ${rel(6)};
+  border-radius: ${rel(10)};
+  white-space: nowrap;
+`
+
+// SpeakingIcon is already defined above

@@ -1,9 +1,8 @@
-# Oink Oink
+# Word Impostor
 
-Think you know what a sad frog sounds like? Test your impressions against your friends!
-Here's a [demo](https://developers.rune.ai/examples/oink-oink/).
+Can you spot the impostor? One player gets a slightly different word, and others must identify them through descriptions and voting.
 
-[<img src="../../docs/static/img/multiplayer-games/oink-oink.png" width=500>](https://developers.rune.ai/examples/oink-oink/)
+A multiplayer social deduction game built with the Rune SDK.
 
 ## Install
 

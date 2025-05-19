@@ -4,6 +4,7 @@ import {
   $yourPlayerId,
   $round,
   $gameOver,
+  $game,
 } from "../../../state/$state"
 import { useState, useEffect, useMemo, memo } from "react"
 import { sortBy } from "../../../lib/sortBy"
@@ -44,6 +45,7 @@ export const Results = memo(() => {
   const yourPlayerId = useAtomValue($yourPlayerId)
   const round = useAtomValue($round)
   const gameOver = useAtomValue($gameOver)
+  const gameState = useAtomValue($game)
 
   const [animationStepIdx, setAnimationStepIdx] = useState(0)
 
@@ -64,11 +66,10 @@ export const Results = memo(() => {
     }
   }, [animationStepIdx])
 
-  useEffect(() => {
-    if (gameOver && animationStepIdx >= animationStepKeyIndexMap.cta) {
-      Rune.showGameOverPopUp()
-    }
-  }, [animationStepIdx, gameOver])
+  // Removed automatic game over popup to prevent state desync
+
+  // We've removed the auto-advance functionality to prevent state desync issues
+  // Players will need to manually click the continue button
 
   const playersOrderedByPreviousScore = useMemo(
     () =>
@@ -195,19 +196,30 @@ export const Results = memo(() => {
         })}
       </List>
 
-      <ReadyButton
-        style={{
-          opacity:
-            animationStepIdx >= animationStepKeyIndexMap.cta &&
-            yourPlayerId &&
-            round < numRounds - 1
-              ? 1
-              : 0,
-        }}
-        onClick={() => Rune.actions?.nextRound?.()}
-      >
-        <div>Continue</div>
-      </ReadyButton>
+      {gameOver ? (
+        <ReadyButton
+          style={{
+            opacity: animationStepIdx >= animationStepKeyIndexMap.cta ? 1 : 0,
+          }}
+          onClick={() => Rune.showGameOverPopUp()}
+        >
+          <div>Show Final Scores</div>
+        </ReadyButton>
+      ) : (
+        <ReadyButton
+          style={{
+            opacity:
+              animationStepIdx >= animationStepKeyIndexMap.cta &&
+              yourPlayerId &&
+              round < numRounds - 1
+                ? 1
+                : 0,
+          }}
+          onClick={() => Rune.actions?.nextRound?.()}
+        >
+          <div>Continue</div>
+        </ReadyButton>
+      )}
     </Root>
   )
 })

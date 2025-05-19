@@ -3,8 +3,7 @@ import { $currentTurn, $gameOver, $yourPlayerId, $playersInfo, $game, $players }
 import styled, { css } from "styled-components/macro"
 import { rel } from "../../../style/rel"
 import { memo, useEffect } from "react"
-import { Player } from "@lottiefiles/react-lottie-player"
-import confettiAnimation from "../lottie/confetti.json"
+// Lottie animations removed to clean up the project
 import { sounds } from "../../../sounds/sounds"
 
 export const ImpostorResults = memo(() => {
@@ -16,6 +15,9 @@ export const ImpostorResults = memo(() => {
   useEffect(() => {
     sounds.endOfTurn.play()
   }, [])
+
+  // We've removed the auto-advance functionality to prevent state desync issues
+  // Players will need to manually click the continue button
 
   if (!currentTurn) return null
 
@@ -38,7 +40,6 @@ export const ImpostorResults = memo(() => {
 
   return (
     <Root>
-      {isImpostorCaught && <Confetti autoplay keepLastFrame src={confettiAnimation} />}
 
       <Title>
         {isImpostorCaught
@@ -86,21 +87,26 @@ export const ImpostorResults = memo(() => {
       </ResultMessage>
 
       {gameOver ? (
-        <GameOverMessage>
-          {isImpostorCaught ? (
-            isYouImpostor ? (
-              "Game Over - The team wins!"
+        <>
+          <GameOverMessage>
+            {isImpostorCaught ? (
+              isYouImpostor ? (
+                "Game Over - The team wins!"
+              ) : (
+                "Game Over - Your team wins!"
+              )
             ) : (
-              "Game Over - Your team wins!"
-            )
-          ) : (
-            isYouImpostor ? (
-              "Game Over - You win!"
-            ) : (
-              "Game Over - The impostor wins!"
-            )
-          )}
-        </GameOverMessage>
+              isYouImpostor ? (
+                "Game Over - You win!"
+              ) : (
+                "Game Over - The impostor wins!"
+              )
+            )}
+          </GameOverMessage>
+          <ContinueButton onClick={() => Rune.showGameOverPopUp()}>
+            Show Final Scores
+          </ContinueButton>
+        </>
       ) : (
         <ContinueButton onClick={() => Rune.actions?.nextRound?.()}>
           Continue to Next Round
@@ -221,11 +227,4 @@ const ContinueButton = styled.button`
   }
 `
 
-const Confetti = styled(Player)`
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-`
+// Confetti animation removed

@@ -25,12 +25,6 @@ export const Game = memo(() => {
     content = <Voting />;
   } else if (currentTurn.stage === "result") {
     content = <ImpostorResults />;
-  } else if ((currentTurn.stage as any) === "acting") {
-    // For backward compatibility
-    content = <Describing />;
-  } else if ((currentTurn.stage as any) === "endOfTurn") {
-    // For backward compatibility
-    content = <Voting />;
   }
 
   return (

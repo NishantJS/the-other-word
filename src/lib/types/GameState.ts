@@ -44,18 +44,6 @@ export const similarWordPairs: [string, string][] = [
   ["dolphin", "porpoise"]
 ]
 
-// For backward compatibility with existing components
-export const animals = wordsList
-export const emotions = ["happy", "sad", "angry", "surprised", "confused", "excited", "scared", "bored"] as const
-export type Animal = typeof animals[number]
-export type Emotion = typeof emotions[number]
-export type Guess = {
-  playerId: PlayerId
-  animal: Animal
-  emotion: Emotion
-  correct: boolean
-}
-
 export type Word = typeof wordsList[number]
 
 export type Vote = {
@@ -67,9 +55,9 @@ export type Vote = {
 type Score = {
   nonImpostor: number  // Points earned as a non-impostor
   impostor: number     // Points earned as an impostor
-  // For backward compatibility
-  acting?: number
-  guessing?: number
+  // For backward compatibility with Results.tsx
+  acting: number
+  guessing: number
 }
 
 export interface GameState {
@@ -82,12 +70,7 @@ export interface GameState {
     score: Score
     latestScore: number  // Score earned in the latest round
     voted: boolean       // Whether this player has voted in the current round
-    // For backward compatibility
-    actor?: boolean
-    latestTurnScore?: {
-      acting: number
-      guessing: number
-    }
+    // For backward compatibility with Results.tsx
     latestRoundScore?: {
       acting: number
       guessing: number
@@ -105,17 +88,11 @@ export interface GameState {
     votingComplete: boolean              // True when all players have voted
     impostorCaught: boolean              // True if impostor was voted out
     remainingPlayers: number             // Number of players still in the game
-    // For backward compatibility
-    animal?: Animal
-    emotion?: Emotion
-    showSkipGuessButton?: boolean
-    latestActingStartedAt?: number
+    previousDescriberId?: PlayerId | null // ID of the player who described before the current one
+    nextDescriberId?: PlayerId | null    // ID of the player who will describe next
+    completedDescribers?: PlayerId[]     // IDs of players who have already described
   } | null
   votes: Vote[]
   gameOver: boolean
   winningTeam: "nonImpostors" | "impostor" | null  // Who won the game
-  // For backward compatibility
-  animals?: Animal[]
-  emotions?: Emotion[]
-  guesses?: Guess[]
 }

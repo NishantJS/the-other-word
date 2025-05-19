@@ -173,8 +173,14 @@ export const Voting = memo(() => {
     .filter(([id]) => id !== yourPlayer?.id)
     .map(([id, info]) => ({
       id,
-      ...info
+      ...info,
+      // Add speaking order information
+      speakingOrder: currentTurn?.descriptionOrder.indexOf(id) ?? -1,
+      hasSpoken: currentTurn?.completedDescribers?.includes(id) ?? false
     }))
+
+  // Sort players by speaking order to help with voting
+  otherPlayers.sort((a, b) => a.speakingOrder - b.speakingOrder)
 
   return (
     <Root>
@@ -211,7 +217,13 @@ export const Voting = memo(() => {
             }}
           >
             <AvatarImg src={player.avatarUrl} />
-            <PlayerName>{player.displayName}</PlayerName>
+            <PlayerInfo>
+              <PlayerName>{player.displayName}</PlayerName>
+              <SpeakingInfo>
+                <SpeakingOrder>Speaker #{player.speakingOrder + 1}</SpeakingOrder>
+                {player.hasSpoken && <SpeakingStatus>✓ Has spoken</SpeakingStatus>}
+              </SpeakingInfo>
+            </PlayerInfo>
           </PlayerItem>
         ))}
       </PlayerList>
@@ -314,9 +326,37 @@ const AvatarImg = styled.img`
   margin-right: ${rel(12)};
 `
 
+const PlayerInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+`
+
 const PlayerName = styled.div`
   font-size: ${rel(18)};
   color: white;
+  margin-bottom: ${rel(4)};
+`
+
+const SpeakingInfo = styled.div`
+  display: flex;
+  align-items: center;
+`
+
+const SpeakingOrder = styled.div`
+  font-size: ${rel(12)};
+  color: #ffcc00;
+  background-color: rgba(0, 0, 0, 0.3);
+  padding: ${rel(2)} ${rel(6)};
+  border-radius: ${rel(10)};
+  margin-right: ${rel(8)};
+`
+
+const SpeakingStatus = styled.div`
+  font-size: ${rel(12)};
+  color: #5bb600;
+  display: flex;
+  align-items: center;
 `
 
 const VoteButton = styled.button<{ disabled: boolean }>`

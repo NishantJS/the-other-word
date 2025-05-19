@@ -19,10 +19,6 @@ export const $state = atom<{
     votes: [],
     gameOver: false,
     winningTeam: null,
-    // For backward compatibility
-    animals: [],
-    emotions: [],
-    guesses: [],
   },
   players: {},
   yourPlayerId: undefined,
@@ -67,18 +63,10 @@ export const $impostorPlayer = atom((get) =>
   get($players).find((player) => player.isImpostor)
 )
 
-// For backward compatibility
-export const $actorPlayer = atom((get) =>
-  get($players).find((player) => player.actor || player.describing)
-)
+// Alias for $describingPlayer for code clarity
+export const $actorPlayer = atom((get) => get($describingPlayer))
 
-export const $animals = atom((get) => get($game).animals || [])
-
-export const $emotions = atom((get) => get($game).emotions || [])
-
-export const $guesses = atom((get) => get($game).guesses || [])
-
-export const $latestGuess = atom((get) => get($guesses).at(-1))
+// Removed backward compatibility atoms
 
 export const $round = atom((get) => get($game).round)
 
