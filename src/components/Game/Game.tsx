@@ -1,5 +1,5 @@
 import { useAtomValue } from "jotai"
-import { $yourPlayer, $currentTurn } from "../../state/$state"
+import { $yourPlayer, $currentTurn, $game } from "../../state/$state"
 import styled, { css } from "styled-components/macro"
 import { Countdown } from "./Countdown"
 import { Describing } from "./Describing/Describing"
@@ -7,10 +7,12 @@ import { Voting } from "./Voting/Voting"
 import { ImpostorResults } from "./Results/ImpostorResults"
 import { memo } from "react"
 import { rel } from "../../style/rel"
+import { BotSpeech } from "./BotSpeech/BotSpeech"
 
 export const Game = memo(() => {
   const yourPlayer = useAtomValue($yourPlayer)
   const currentTurn = useAtomValue($currentTurn)
+  const game = useAtomValue($game)
 
   if (!currentTurn) return null
 
@@ -30,6 +32,8 @@ export const Game = memo(() => {
   return (
     <Root isImpostor={yourPlayer?.isImpostor}>
       {content}
+      {/* Add BotSpeech component if speech is enabled */}
+      {game.useSpeech && <BotSpeech />}
     </Root>
   )
 })

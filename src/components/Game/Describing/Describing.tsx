@@ -1,5 +1,5 @@
 import { useAtomValue } from "jotai"
-import { $yourPlayer, $currentTurn, $playersInfo } from "../../../state/$state"
+import { $yourPlayer, $currentTurn, $playersInfo, $game } from "../../../state/$state"
 import styled from "styled-components/macro"
 import { rel } from "../../../style/rel"
 import { memo, useEffect, useState } from "react"
@@ -114,18 +114,50 @@ const SpectatingView = memo(() => {
   const completedDescribers = currentTurn?.completedDescribers || []
 
   const playersInfo = useAtomValue($playersInfo)
+  const game = useAtomValue($game)
 
-  const describingPlayer = describingPlayerId && playersInfo
-    ? playersInfo[describingPlayerId]
-    : null
+  // Get player info and check if they are bots
+  let describingPlayer = null
+  if (describingPlayerId) {
+    const playerInfo = playersInfo[describingPlayerId]
+    const gamePlayer = game.players.find(p => p.id === describingPlayerId)
+    const isBot = gamePlayer?.isBot || false
+    const botInfo = isBot ? game.bots.find(b => b.id === describingPlayerId) : null
 
-  const nextPlayer = nextDescriberId && playersInfo
-    ? playersInfo[nextDescriberId]
-    : null
+    describingPlayer = {
+      displayName: playerInfo?.displayName || botInfo?.name || 'Player',
+      avatarUrl: playerInfo?.avatarUrl || botInfo?.avatarUrl || '/images/bots/default.svg',
+      isBot: isBot
+    }
+  }
 
-  const previousPlayer = previousDescriberId && playersInfo
-    ? playersInfo[previousDescriberId]
-    : null
+  let nextPlayer = null
+  if (nextDescriberId) {
+    const playerInfo = playersInfo[nextDescriberId]
+    const gamePlayer = game.players.find(p => p.id === nextDescriberId)
+    const isBot = gamePlayer?.isBot || false
+    const botInfo = isBot ? game.bots.find(b => b.id === nextDescriberId) : null
+
+    nextPlayer = {
+      displayName: playerInfo?.displayName || botInfo?.name || 'Player',
+      avatarUrl: playerInfo?.avatarUrl || botInfo?.avatarUrl || '/images/bots/default.svg',
+      isBot: isBot
+    }
+  }
+
+  let previousPlayer = null
+  if (previousDescriberId) {
+    const playerInfo = playersInfo[previousDescriberId]
+    const gamePlayer = game.players.find(p => p.id === previousDescriberId)
+    const isBot = gamePlayer?.isBot || false
+    const botInfo = isBot ? game.bots.find(b => b.id === previousDescriberId) : null
+
+    previousPlayer = {
+      displayName: playerInfo?.displayName || botInfo?.name || 'Player',
+      avatarUrl: playerInfo?.avatarUrl || botInfo?.avatarUrl || '/images/bots/default.svg',
+      isBot: isBot
+    }
+  }
 
   const isNextPlayer = nextDescriberId === yourPlayer?.id
 
@@ -155,7 +187,10 @@ const SpectatingView = memo(() => {
       <PlayerInfo>
         <CurrentSpeakerBadge>
           <AvatarImg src={describingPlayer.avatarUrl} />
-          <PlayerName>{describingPlayer.displayName} is speaking</PlayerName>
+          <PlayerNameRow>
+            <PlayerName>{describingPlayer.displayName} is speaking</PlayerName>
+            {describingPlayer.isBot && <BotBadge>🤖 Bot</BotBadge>}
+          </PlayerNameRow>
           <SpeakingIcon>🎤</SpeakingIcon>
         </CurrentSpeakerBadge>
       </PlayerInfo>
@@ -173,19 +208,28 @@ const SpectatingView = memo(() => {
         {previousPlayer && (
           <SpeakerItem completed>
             <SmallAvatar src={previousPlayer.avatarUrl} />
-            <SmallName>Previous</SmallName>
+            <SmallNameContainer>
+              <SmallName>Previous</SmallName>
+              {previousPlayer.isBot && <SmallBotBadge>🤖</SmallBotBadge>}
+            </SmallNameContainer>
           </SpeakerItem>
         )}
 
         <SpeakerItem current>
           <SmallAvatar src={describingPlayer.avatarUrl} />
-          <SmallName>Current</SmallName>
+          <SmallNameContainer>
+            <SmallName>Current</SmallName>
+            {describingPlayer.isBot && <SmallBotBadge>🤖</SmallBotBadge>}
+          </SmallNameContainer>
         </SpeakerItem>
 
         {nextPlayer && (
           <SpeakerItem next={isNextPlayer}>
             <SmallAvatar src={nextPlayer.avatarUrl} />
-            <SmallName>{isNextPlayer ? "YOU'RE NEXT" : "Next"}</SmallName>
+            <SmallNameContainer>
+              <SmallName>{isNextPlayer ? "YOU'RE NEXT" : "Next"}</SmallName>
+              {nextPlayer.isBot && <SmallBotBadge>🤖</SmallBotBadge>}
+            </SmallNameContainer>
           </SpeakerItem>
         )}
       </SpeakingOrderContainer>
@@ -287,10 +331,28 @@ const AvatarImg = styled.img`
   margin-bottom: ${rel(10)};
 `
 
+const PlayerNameRow = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: ${rel(5)};
+`
+
 const PlayerName = styled.div`
   font-size: ${rel(22)};
   color: white;
   text-align: center;
+`
+
+const BotBadge = styled.div`
+  font-size: ${rel(14)};
+  color: #00bcd4;
+  background-color: rgba(0, 0, 0, 0.3);
+  padding: ${rel(2)} ${rel(8)};
+  border-radius: ${rel(10)};
+  margin-top: ${rel(5)};
+  display: flex;
+  align-items: center;
 `
 
 const RemainingTime = styled.div`
@@ -403,15 +465,32 @@ const SmallAvatar = styled.img`
   box-shadow: 0 ${rel(2)} ${rel(4)} rgba(0, 0, 0, 0.3);
 `
 
+const SmallNameContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: ${rel(5)};
+`
+
 const SmallName = styled.div`
   font-size: ${rel(12)};
   color: white;
-  margin-top: ${rel(5)};
   text-align: center;
   background-color: rgba(0, 0, 0, 0.5);
   padding: ${rel(2)} ${rel(6)};
   border-radius: ${rel(10)};
   white-space: nowrap;
+`
+
+const SmallBotBadge = styled.div`
+  font-size: ${rel(10)};
+  color: #00bcd4;
+  background-color: rgba(0, 0, 0, 0.3);
+  padding: ${rel(1)} ${rel(4)};
+  border-radius: ${rel(8)};
+  margin-top: ${rel(2)};
+  display: flex;
+  align-items: center;
 `
 
 // SpeakingIcon is already defined above

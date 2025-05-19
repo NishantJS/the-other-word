@@ -20,6 +20,12 @@ export const $state = atom<{
     reactions: [],
     gameOver: false,
     winningTeam: null,
+    useBots: false,
+    botCount: 0,
+    bots: [],
+    useAI: true,
+    useSpeech: true,
+    pendingAIRequests: {}
   },
   players: {},
   yourPlayerId: undefined,

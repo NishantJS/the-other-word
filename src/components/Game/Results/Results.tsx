@@ -156,12 +156,21 @@ export const Results = memo(() => {
             (player.latestRoundScore?.acting || 0) + (player.latestRoundScore?.guessing || 0)
           const score = (player.score?.acting || 0) + (player.score?.guessing || 0)
 
+          // Find bot info if this is a bot player
+          const isBot = player.isBot || false
+          const botInfo = isBot ? gameState.bots.find(b => b.id === player.id) : null
+
+          // Get avatar URL and display name from either player.info or bot info
+          const avatarUrl = player.info?.avatarUrl || botInfo?.avatarUrl || '/images/bots/default.svg'
+          const displayName = player.info?.displayName || botInfo?.name || 'Player'
+
           return (
             <Item key={player.id} offset={player.offset}>
-              <AvatarImg src={player.info.avatarUrl} />
+              <AvatarImg src={avatarUrl} />
               <div style={{ width: rel(8) }} />
               <Name>
-                {player.id === yourPlayerId ? "You" : player.info.displayName}
+                {player.id === yourPlayerId ? "You" : displayName}
+                {isBot && " 🤖"}
               </Name>
               <div style={{ flex: 1 }} />
               <Score>{player.score.acting}</Score>

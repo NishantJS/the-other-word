@@ -8,6 +8,7 @@ import {
   $round,
   $currentTurn,
   $playersInfo,
+  $game,
 } from "../../state/$state"
 import { useEffect, memo } from "react"
 import { sounds } from "../../sounds/sounds"
@@ -26,9 +27,27 @@ export const Countdown = memo(() => {
   // Find the current describing player
   const describingPlayerId = currentTurn.currentDescriberId
   const playersInfo = useAtomValue($playersInfo)
-  const describingPlayer = describingPlayerId && playersInfo
-    ? playersInfo[describingPlayerId]
-    : null
+  const gameState = useAtomValue($game)
+
+  // Get player info, checking for both human and bot players
+  let describingPlayer = null
+  if (describingPlayerId) {
+    // Check if this is a human player with info
+    const playerInfo = playersInfo[describingPlayerId]
+
+    // Check if this is a bot player
+    const gamePlayer = gameState.players.find(p => p.id === describingPlayerId)
+    const isBot = gamePlayer?.isBot || false
+    const botInfo = isBot ? gameState.bots.find(b => b.id === describingPlayerId) : null
+
+    if (playerInfo || botInfo) {
+      describingPlayer = {
+        displayName: playerInfo?.displayName || botInfo?.name || 'Player',
+        avatarUrl: playerInfo?.avatarUrl || botInfo?.avatarUrl || '/images/bots/default.svg',
+        isBot: isBot
+      }
+    }
+  }
 
   const isYourTurn = yourPlayer?.describing
 

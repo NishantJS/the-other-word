@@ -27,11 +27,22 @@ export const ImpostorResults = memo(() => {
   const gameState = useAtomValue($game)
 
   const impostorPlayer = Object.entries(playersInfo)
-    .map(([id, info]) => ({ id, ...info }))
-    .find(player => {
-      const gamePlayer = gamePlayers.find(p => p.id === player.id)
-      return gamePlayer?.isImpostor
+    .map(([id, info]) => {
+      const gamePlayer = gamePlayers.find(p => p.id === id)
+      // Find bot info if this is a bot
+      const isBot = gamePlayer?.isBot || false
+      const botInfo = isBot ? gameState.bots.find(b => b.id === id) : null
+
+      return {
+        id,
+        // Use info if available, otherwise use bot info
+        displayName: info?.displayName || botInfo?.name || 'Player',
+        avatarUrl: info?.avatarUrl || botInfo?.avatarUrl || '/images/bots/default.svg',
+        isBot: isBot,
+        isImpostor: gamePlayer?.isImpostor || false
+      }
     })
+    .find(player => player.isImpostor)
 
   if (!impostorPlayer) return null
 
@@ -55,7 +66,10 @@ export const ImpostorResults = memo(() => {
             : impostorPlayer.displayName}
           {impostorPlayer.id === yourPlayerId && " (You)"}
         </ImpostorName>
-        <ImpostorLabel>The Impostor</ImpostorLabel>
+        <ImpostorLabelContainer>
+          <ImpostorLabel>The Impostor</ImpostorLabel>
+          {impostorPlayer.isBot && <BotIndicator>🤖 Bot</BotIndicator>}
+        </ImpostorLabelContainer>
 
         <WordsContainer>
           <WordCard>
@@ -164,10 +178,27 @@ const ImpostorName = styled.div`
   margin-bottom: ${rel(4)};
 `
 
+const ImpostorLabelContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: ${rel(16)};
+`
+
 const ImpostorLabel = styled.div`
   font-size: ${rel(18)};
   color: #e4faff;
-  margin-bottom: ${rel(16)};
+`
+
+const BotIndicator = styled.div`
+  font-size: ${rel(14)};
+  color: #00bcd4;
+  background-color: rgba(0, 0, 0, 0.3);
+  padding: ${rel(2)} ${rel(8)};
+  border-radius: ${rel(10)};
+  margin-top: ${rel(4)};
+  display: flex;
+  align-items: center;
 `
 
 const WordsContainer = styled.div`

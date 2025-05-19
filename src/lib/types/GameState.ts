@@ -71,6 +71,17 @@ export type PersistedPlayerData = {
   scores: Score
 }
 
+// Bot player type with additional properties
+export interface BotPlayer {
+  id: PlayerId
+  name: string
+  avatarUrl: string
+  description: string  // Pre-recorded description for the bot
+  aiDescription?: string // AI-generated description
+  voicePitch?: number // Voice pitch for speech synthesis
+  voiceRate?: number // Voice rate for speech synthesis
+}
+
 export interface GameState {
   players: {
     id: PlayerId
@@ -81,6 +92,7 @@ export interface GameState {
     score: Score
     latestScore: number  // Score earned in the latest round
     voted: boolean       // Whether this player has voted in the current round
+    isBot?: boolean      // True if this player is a bot
     // For backward compatibility with Results.tsx
     latestRoundScore?: {
       acting: number
@@ -90,6 +102,22 @@ export interface GameState {
   // Persisted data that will be saved between game sessions
   // This is handled by Rune SDK internally and accessed via game.persisted
   persisted?: Record<PlayerId, PersistedPlayerData>
+  useBots: boolean       // Whether to use bots in the game
+  botCount: number       // Number of bots to add to the game
+  bots: BotPlayer[]      // List of available bot players
+  useAI: boolean         // Whether to use AI features
+  useSpeech: boolean     // Whether to use speech synthesis and recognition
+  aiAnalysis?: {         // AI analysis of player descriptions
+    playerId: PlayerId
+    rating: number       // 1-10 rating of how likely the player is the impostor
+    explanation: string  // Explanation of the rating
+  }
+  pendingAIRequests?: Record<string, {
+    botId?: PlayerId
+    impostorAnalysis?: {
+      playerId: PlayerId
+    }
+  }>
   gameStarted: boolean
   round: number
   currentWord: string    // The main word for the current round

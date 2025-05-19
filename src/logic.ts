@@ -1,6 +1,8 @@
 import { similarWordPairs, GameState } from "./lib/types/GameState"
 import { startGameCheck } from "./lib/startGameCheck"
 import { PlayerId } from "rune-sdk/multiplayer"
+import { getBotVote, isBot } from "./lib/bots"
+import { generateBotDescription, handleAIResponse } from "./lib/ai"
 
 // Game constants
 export const numRounds = 3
@@ -61,10 +63,25 @@ function startNewRound(game: GameState): void {
     player.isImpostor = false
   }
 
-  // Randomly select one player to be the impostor
-  // Use Math.random for local testing, but in production this will use Rune's deterministic random
-  const randomPlayerIndex = Math.floor(Math.random() * game.players.length)
-  game.players[randomPlayerIndex].isImpostor = true
+  // Select a random player to be the impostor
+  // Prefer human players for the impostor role (70% chance)
+  const humanPlayers = game.players.filter(p => !p.isBot)
+
+  let impostorPlayer: typeof game.players[0] | undefined
+
+  // If we have human players and random value is < 0.7, choose a human impostor
+  if (humanPlayers.length > 0 && Math.random() < 0.7) {
+    const randomHumanIndex = Math.floor(Math.random() * humanPlayers.length)
+    impostorPlayer = humanPlayers[randomHumanIndex]
+  } else {
+    // Otherwise choose any player (human or bot)
+    const impostorIndex = Math.floor(Math.random() * game.players.length)
+    impostorPlayer = game.players[impostorIndex]
+  }
+
+  if (impostorPlayer) {
+    impostorPlayer.isImpostor = true
+  }
 
   // Assign words to players
   for (const player of game.players) {
@@ -101,6 +118,29 @@ function startNewRound(game: GameState): void {
   // Clear votes and reactions from previous rounds
   game.votes = []
   game.reactions = []
+
+  // If AI is enabled, prepare AI descriptions for bot players
+  if (game.useAI) {
+    // Clear previous AI descriptions
+    for (const bot of game.bots) {
+      bot.aiDescription = undefined
+    }
+
+    // Generate AI descriptions for the first bot that will speak
+    const botPlayers = game.players.filter(p => p.isBot)
+    if (botPlayers.length > 0) {
+      // Find the first bot in the speaking order
+      const firstBotIndex = game.currentTurn.descriptionOrder.findIndex(id =>
+        botPlayers.some(bot => bot.id === id)
+      )
+
+      if (firstBotIndex !== -1) {
+        const firstBotId = game.currentTurn.descriptionOrder[firstBotIndex]
+        // Generate description for the first bot
+        handleBotDescription(game, firstBotId)
+      }
+    }
+  }
 }
 
 // Helper function to check if the impostor was caught
@@ -244,6 +284,10 @@ function moveToNextDescriber(game: GameState): void {
 
     // Clear reactions when moving to voting stage
     game.reactions = []
+
+    // Handle bot voting
+    handleBotVoting(game)
+
     return
   }
 
@@ -260,6 +304,16 @@ function moveToNextDescriber(game: GameState): void {
   const nextDescriber = game.players.find((p) => p.id === nextPlayerId)
   if (nextDescriber) {
     nextDescriber.describing = true
+
+    // If the next player is a bot, prepare their description
+    if (nextDescriber.isBot && game.useAI) {
+      // Find the bot info
+      const botInfo = game.bots.find(b => b.id === nextPlayerId)
+      if (botInfo && !botInfo.aiDescription) {
+        // Generate an AI description for the bot if we don't have one yet
+        handleBotDescription(game, nextPlayerId)
+      }
+    }
   }
 
   // Set previous, current, and next describers
@@ -278,9 +332,68 @@ function moveToNextDescriber(game: GameState): void {
   game.currentTurn.timerStartedAt = Rune.gameTime() / 1000
 }
 
+// Helper function to handle bot voting
+function handleBotVoting(game: GameState): void {
+  if (!game.currentTurn) return
+
+  // Find the impostor
+  const impostor = game.players.find(p => p.isImpostor)
+  if (!impostor) return
+
+  // Get all bot players
+  const botPlayers = game.players.filter(p => p.isBot)
+
+  // Get all player IDs
+  const playerIds = game.players.map(p => p.id)
+
+  // Make bots vote
+  for (const bot of botPlayers) {
+    // Skip if bot has already voted (shouldn't happen, but just in case)
+    if (bot.voted) continue
+
+    // Get bot's vote
+    const suspectId = getBotVote(bot.id, playerIds, impostor.id)
+
+    // Record the vote
+    game.votes.push({
+      voterId: bot.id,
+      suspectId,
+      round: game.round
+    })
+
+    // Mark the bot as having voted
+    bot.voted = true
+  }
+}
+
+// Helper function to handle bot descriptions
+function handleBotDescription(game: GameState, botId: PlayerId): void {
+  // Find the bot in the game
+  const bot = game.players.find(p => p.id === botId)
+  if (!bot || !bot.isBot) return
+
+  // Find the bot in the bots array to get its description
+  const botInfo = game.bots.find(b => b.id === botId)
+  if (!botInfo) return
+
+  // Add a reaction to simulate the bot speaking
+  // We'll use a speech bubble emoji to indicate the bot is "speaking"
+  game.reactions.push({
+    playerId: botId,
+    emoji: "💬",
+    timestamp: Rune.gameTime() / 1000
+  })
+
+  // We're not using AI to avoid network requests
+  // Instead, we'll use the pre-defined descriptions from the bots.ts file
+  // The bot's description is already set when the bot is created
+}
+
+
+
 // Initialize the game logic
 Rune.initLogic({
-  minPlayers: 3,  // Changed from 2 to 3 as per requirements
+  minPlayers: 1,  // Changed to 1 to allow single player with bots
   maxPlayers: 6,  // Maximum allowed by Rune SDK
   // @ts-ignore - persistPlayerData is supported by Rune SDK
   persistPlayerData: true, // Enable persisted player data
@@ -300,12 +413,19 @@ Rune.initLogic({
       },
       latestScore: 0,
       voted: false,
+      isBot: false, // Real players are not bots
       // For backward compatibility with Results.tsx
       latestRoundScore: {
         acting: 0,
         guessing: 0
       }
     })),
+    useBots: playerIds.length < 3, // Automatically use bots if fewer than 3 players
+    botCount: playerIds.length < 3 ? 3 - playerIds.length : 0, // Add enough bots to reach 3 players
+    bots: [], // Will be populated when game starts
+    useAI: false, // Disable AI features by default to avoid network requests
+    useSpeech: false, // Disable speech features by default
+    pendingAIRequests: {}, // Initialize empty pending AI requests
     gameStarted: false,
     round: 0,
     currentWord: "",
@@ -317,6 +437,45 @@ Rune.initLogic({
     winningTeam: null,
   }),
   actions: {
+    toggleBots: (_, { game }) => {
+      if (game.gameStarted) throw Rune.invalidAction()
+
+      // Toggle bot usage
+      game.useBots = !game.useBots
+
+      // Update bot count based on current player count
+      const realPlayerCount = game.players.filter(p => !p.isBot).length
+      game.botCount = (realPlayerCount < 3 && game.useBots) ? 3 - realPlayerCount : 0
+    },
+
+    toggleAI: (_, { game }) => {
+      if (game.gameStarted) throw Rune.invalidAction()
+
+      // Toggle AI features
+      game.useAI = !game.useAI
+    },
+
+    toggleSpeech: (_, { game }) => {
+      if (game.gameStarted) throw Rune.invalidAction()
+
+      // Toggle speech features
+      game.useSpeech = !game.useSpeech
+    },
+
+    storeAIRequest: ({ requestId, botId, impostorAnalysis }, { game }) => {
+      // Initialize pendingAIRequests if it doesn't exist
+      if (!game.pendingAIRequests) {
+        game.pendingAIRequests = {}
+      }
+
+      // Store the request metadata
+      if (botId) {
+        game.pendingAIRequests[requestId] = { botId }
+      } else if (impostorAnalysis) {
+        game.pendingAIRequests[requestId] = { impostorAnalysis }
+      }
+    },
+
     setReadyToStart: (_, { game, playerId }) => {
       if (game.gameStarted) throw Rune.invalidAction()
 
@@ -580,6 +739,54 @@ Rune.initLogic({
       startGameCheck(game)
     },
   },
+  ai: {
+    promptResponse: ({ requestId, response }, { game }) => {
+      // Since Rune AI API is in preview, we'll use a workaround
+      // We'll store metadata in the game state when making requests
+
+      // Check if this is a bot description response
+      const botId = game.pendingAIRequests?.[requestId]?.botId
+      if (botId) {
+        // Store the AI-generated description for the bot
+        const bot = game.bots.find(b => b.id === botId)
+        if (bot) {
+          bot.aiDescription = response
+        }
+
+        // Remove the pending request
+        if (game.pendingAIRequests) {
+          delete game.pendingAIRequests[requestId]
+        }
+        return
+      }
+
+      // Check if this is an impostor analysis response
+      const analysisData = game.pendingAIRequests?.[requestId]?.impostorAnalysis
+      if (analysisData) {
+        // Parse the AI analysis
+        const ratingMatch = response.match(/Rating:\s*(\d+)/i)
+        const explanationMatch = response.match(/Explanation:\s*(.+)/i)
+
+        if (ratingMatch && explanationMatch) {
+          const rating = parseInt(ratingMatch[1])
+          const explanation = explanationMatch[1]
+
+          // Store the analysis
+          game.aiAnalysis = {
+            playerId: analysisData.playerId,
+            rating,
+            explanation
+          }
+        }
+
+        // Remove the pending request
+        if (game.pendingAIRequests) {
+          delete game.pendingAIRequests[requestId]
+        }
+      }
+    }
+  },
+
   update: ({ game }) => {
     if (!game.currentTurn) return
 
@@ -590,13 +797,55 @@ Rune.initLogic({
         if (currentTime >= game.currentTurn.timerStartedAt + turnCountdown) {
           game.currentTurn.stage = "describing"
           game.currentTurn.timerStartedAt = currentTime
+
+          // If the first player is a bot, add a reaction for them
+          const firstPlayerId = game.currentTurn.currentDescriberId
+          if (firstPlayerId) {
+            const firstPlayer = game.players.find(p => p.id === firstPlayerId)
+            if (firstPlayer && firstPlayer.isBot) {
+              // Add a bot description reaction
+              handleBotDescription(game, firstPlayerId)
+            }
+          }
         }
         break
 
       case "describing":
-        if (currentTime >= game.currentTurn.timerStartedAt + descriptionDuration) {
-          // Time's up for the current describer, move to the next
-          moveToNextDescriber(game)
+        // Check if current describer is a bot
+        const currentDescriberId = game.currentTurn.currentDescriberId
+        if (currentDescriberId) {
+          const currentDescriber = game.players.find(p => p.id === currentDescriberId)
+
+          // If it's a bot's turn, move to the next player after a shorter time (8 seconds)
+          if (currentDescriber && currentDescriber.isBot) {
+            // Check if we need to prepare the next bot's description
+            if (game.useAI && currentTime >= game.currentTurn.timerStartedAt + 4) {
+              // Find the next bot in the speaking order
+              const nextDescriberId = game.currentTurn.nextDescriberId
+              if (nextDescriberId) {
+                const nextPlayer = game.players.find(p => p.id === nextDescriberId)
+                if (nextPlayer && nextPlayer.isBot) {
+                  // Find the bot info
+                  const botInfo = game.bots.find(b => b.id === nextDescriberId)
+                  if (botInfo && !botInfo.aiDescription) {
+                    // Generate an AI description for the next bot
+                    handleBotDescription(game, nextDescriberId)
+                  }
+                }
+              }
+            }
+
+            // Move to the next player after 8 seconds
+            if (currentTime >= game.currentTurn.timerStartedAt + 8) {
+              moveToNextDescriber(game)
+            }
+          } else {
+            // For human players, use the full duration
+            if (currentTime >= game.currentTurn.timerStartedAt + descriptionDuration) {
+              // Time's up for the current describer, move to the next
+              moveToNextDescriber(game)
+            }
+          }
         }
         break
 
@@ -605,8 +854,39 @@ Rune.initLogic({
           // Time's up for voting
           game.currentTurn.votingComplete = true
 
-          // Auto-submit votes for players who have selected but not submitted
-          // This is handled on the client side, but we add this as a safety measure
+          // Auto-submit votes for players who haven't voted yet
+          const nonVotingPlayers = game.players.filter(p => !p.voted)
+
+          // Find the impostor for bot voting
+          const impostorPlayer = game.players.find(p => p.isImpostor)
+          if (impostorPlayer) {
+            const playerIds = game.players.map(p => p.id)
+
+            // Make each non-voting player vote
+            for (const player of nonVotingPlayers) {
+              let suspectId: PlayerId
+
+              if (player.isBot) {
+                // Bots use their voting logic
+                suspectId = getBotVote(player.id, playerIds, impostorPlayer.id)
+              } else {
+                // Human players who didn't vote get a random vote
+                const otherPlayers = game.players.filter(p => p.id !== player.id)
+                const randomIndex = Math.floor(Math.random() * otherPlayers.length)
+                suspectId = otherPlayers[randomIndex].id
+              }
+
+              // Record the vote
+              game.votes.push({
+                voterId: player.id,
+                suspectId,
+                round: game.round
+              })
+
+              // Mark the player as having voted
+              player.voted = true
+            }
+          }
 
           // Check if the impostor was caught
           game.currentTurn.impostorCaught = checkImpostorCaught(game)
