@@ -41,11 +41,13 @@ function shuffleArray<T>(array: T[]): T[] {
 
 // Helper function to start a new round
 function startNewRound(game: GameState): void {
-  // Reset player states for the new round
+  // Reset player states for the new round but preserve scores
   for (const player of game.players) {
     player.describing = false
     player.voted = false
     player.latestScore = 0
+    // Make sure we don't reset the accumulated scores
+    // Only reset latestScore which is for the current round
   }
 
   // Get a new word pair for this round
@@ -135,12 +137,65 @@ function checkImpostorCaught(game: GameState): boolean {
   return false
 }
 
+// Helper function to load scores from persisted data
+function loadPersistedScores(game: any, playerId: string): void {
+  // Ensure game.persisted exists (it's created by Rune SDK when persistPlayerData is true)
+  if (!game.persisted) {
+    return; // No persisted data available
+  }
+
+  // Find the player
+  const player = game.players.find((p: any) => p.id === playerId);
+  if (!player) return;
+
+  // If we have persisted data for this player, load it
+  if (game.persisted[playerId] && game.persisted[playerId].scores) {
+    player.score.nonImpostor = game.persisted[playerId].scores.nonImpostor || 0;
+    player.score.impostor = game.persisted[playerId].scores.impostor || 0;
+    player.score.acting = game.persisted[playerId].scores.acting || 0;
+    player.score.guessing = game.persisted[playerId].scores.guessing || 0;
+  }
+}
+
+// Helper function to update persisted scores
+function updatePersistedScores(game: any): void {
+  // Ensure game.persisted exists (it's created by Rune SDK when persistPlayerData is true)
+  if (!game.persisted) {
+    game.persisted = {};
+  }
+
+  // Update persisted scores for each player
+  for (const player of game.players) {
+    if (!game.persisted[player.id]) {
+      game.persisted[player.id] = {
+        scores: {
+          nonImpostor: 0,
+          impostor: 0,
+          acting: 0,
+          guessing: 0
+        }
+      };
+    }
+
+    // Update the persisted scores with current scores
+    game.persisted[player.id].scores = {
+      nonImpostor: player.score.nonImpostor,
+      impostor: player.score.impostor,
+      acting: player.score.acting,
+      guessing: player.score.guessing
+    };
+  }
+}
+
 // Helper function to report game over to Rune in a consistent way
 function reportGameOver(game: GameState): void {
   if (!game.gameOver) return
 
   // Mark the game as over in the game state
   game.gameOver = true
+
+  // Update persisted scores before game over
+  updatePersistedScores(game);
 
   // Calculate final scores
   const playerScores = game.players.reduce(
@@ -219,6 +274,8 @@ function moveToNextDescriber(game: GameState): void {
 Rune.initLogic({
   minPlayers: 3,  // Changed from 2 to 3 as per requirements
   maxPlayers: 6,  // Maximum allowed by Rune SDK
+  // @ts-ignore - persistPlayerData is supported by Rune SDK
+  persistPlayerData: true, // Enable persisted player data
   setup: (playerIds) => ({
     players: playerIds.map((id) => ({
       id,
@@ -384,6 +441,9 @@ Rune.initLogic({
       if (game.gameOver) throw Rune.invalidAction()
       if (game.currentTurn?.stage !== "result") throw Rune.invalidAction()
 
+      // Update persisted scores before starting a new round
+      updatePersistedScores(game)
+
       // Increment round counter
       game.round += 1
 
@@ -392,6 +452,10 @@ Rune.initLogic({
     },
   },
   events: {
+    playerJoined: (playerId, { game }) => {
+      // Load persisted scores for the player who joined
+      loadPersistedScores(game, playerId);
+    },
     playerLeft: (playerId, { game }) => {
       // Remove the player
       game.players = game.players.filter((player) => player.id !== playerId)
@@ -443,6 +507,9 @@ Rune.initLogic({
             }
           }
         }
+
+        // Update persisted scores
+        updatePersistedScores(game)
 
         // Report game over to Rune
         if (game.gameOver) {
@@ -544,6 +611,9 @@ Rune.initLogic({
               }
             })
 
+            // Update persisted scores
+            updatePersistedScores(game)
+
             // Game ends when impostor is caught
             game.gameOver = true
             game.winningTeam = "nonImpostors"
@@ -564,6 +634,9 @@ Rune.initLogic({
                   acting: impostorSurvivePoints,
                   guessing: 0
                 }
+
+                // Update persisted scores
+                updatePersistedScores(game)
 
                 game.gameOver = true
                 game.winningTeam = "impostor"

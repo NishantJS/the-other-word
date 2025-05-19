@@ -46,8 +46,8 @@ const Root = styled.div<{ isImpostor?: boolean }>`
   justify-content: center;
   background: radial-gradient(
     62.56% 62.56% at 50% 44.09%,
-    #bc5287 0%,
-    #24083a 81.77%,
-    #24083a 100%
+    #9c27b0 0%,
+    #4a148c 81.77%,
+    #311b92 100%
   );
 `

@@ -3,7 +3,7 @@ import { $players, $yourPlayer } from "../../state/$state"
 import { useMemo, memo } from "react"
 import styled from "styled-components/macro"
 
-import logo from "./logo.svg"
+import logo from "./new-logo.svg"
 import { rel } from "../../style/rel"
 
 export const Start = memo(() => {
@@ -41,6 +41,12 @@ const Root = styled.div`
   align-items: center;
   justify-content: space-around;
   padding: 5vh 0;
+  background: radial-gradient(
+    62.56% 62.56% at 50% 44.09%,
+    #9c27b0 0%,
+    #4a148c 81.77%,
+    #311b92 100%
+  );
 `
 
 const LogoImg = styled.img`
@@ -49,24 +55,41 @@ const LogoImg = styled.img`
 
 const ReadyLabel = styled.div`
   font-size: ${rel(28)};
-  text-shadow: 0 ${rel(3)} 0 rgba(0, 0, 0, 0.35);
+  text-shadow: 0 ${rel(3)} 0 rgba(0, 0, 0, 0.5);
   text-align: center;
+  color: white;
+  font-weight: bold;
+  background-color: rgba(0, 0, 0, 0.2);
+  padding: ${rel(10)} ${rel(20)};
+  border-radius: ${rel(12)};
+  margin: ${rel(15)} 0;
 `
 
 export const ReadyButton = styled.div`
   width: ${rel(336)};
   transition: opacity 150ms ease-out;
 
-  background: linear-gradient(180deg, #ffbbca 0%, #ffbbca 0.01%, #ffeaee 100%);
+  background: linear-gradient(180deg, #7b1fa2 0%, #9c27b0 100%);
   border-radius: ${rel(24)};
   padding: ${rel(8)};
+  box-shadow: 0 ${rel(4)} ${rel(8)} rgba(0, 0, 0, 0.3);
 
   > div {
     background: white;
     border-radius: ${rel(24 - 8)};
     font-size: ${rel(24)};
-    color: #af41d1;
+    color: #4a148c;
+    font-weight: bold;
     padding: ${rel(32 - 8)};
     text-align: center;
+  }
+
+  &:hover {
+    background: linear-gradient(180deg, #9c27b0 0%, #7b1fa2 100%);
+  }
+
+  &:active {
+    transform: translateY(${rel(2)});
+    box-shadow: 0 ${rel(2)} ${rel(4)} rgba(0, 0, 0, 0.3);
   }
 `

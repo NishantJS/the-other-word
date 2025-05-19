@@ -60,6 +60,11 @@ type Score = {
   guessing: number
 }
 
+// Type for persisted player data
+export type PersistedPlayerData = {
+  scores: Score
+}
+
 export interface GameState {
   players: {
     id: PlayerId
@@ -76,6 +81,9 @@ export interface GameState {
       guessing: number
     }
   }[]
+  // Persisted data that will be saved between game sessions
+  // This is handled by Rune SDK internally and accessed via game.persisted
+  persisted?: Record<PlayerId, PersistedPlayerData>
   gameStarted: boolean
   round: number
   currentWord: string    // The main word for the current round

@@ -298,14 +298,15 @@ const PlayerItem = styled.div<{ selected: boolean; disabled: boolean }>`
   align-items: center;
   padding: ${rel(12)};
   margin-bottom: ${rel(8)};
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.15);
   border-radius: ${rel(12)};
   cursor: ${({ disabled }) => (disabled ? "default" : "pointer")};
   transition: all 0.2s ease;
 
   ${({ selected }) => selected && css`
-    background-color: rgba(92, 45, 145, 0.8);
+    background-color: rgba(123, 31, 162, 0.9);
     transform: scale(1.02);
+    box-shadow: 0 ${rel(4)} ${rel(8)} rgba(0, 0, 0, 0.3);
   `}
 
   ${({ disabled }) => disabled && css`
@@ -314,7 +315,8 @@ const PlayerItem = styled.div<{ selected: boolean; disabled: boolean }>`
 
   &:hover {
     ${({ disabled }) => !disabled && css`
-      background-color: rgba(255, 255, 255, 0.2);
+      background-color: rgba(255, 255, 255, 0.25);
+      box-shadow: 0 ${rel(2)} ${rel(4)} rgba(0, 0, 0, 0.2);
     `}
   }
 `
@@ -360,7 +362,7 @@ const SpeakingStatus = styled.div`
 `
 
 const VoteButton = styled.button<{ disabled: boolean }>`
-  background: ${({ disabled }) => (disabled ? "#666" : "#e93643")};
+  background: ${({ disabled }) => (disabled ? "#666" : "#d32f2f")};
   color: white;
   font-size: ${rel(20)};
   padding: ${rel(12)} ${rel(24)};
@@ -370,10 +372,18 @@ const VoteButton = styled.button<{ disabled: boolean }>`
   cursor: ${({ disabled }) => (disabled ? "default" : "pointer")};
   opacity: ${({ disabled }) => (disabled ? 0.7 : 1)};
   transition: all 0.2s ease;
+  box-shadow: 0 ${rel(4)} ${rel(8)} rgba(0, 0, 0, 0.3);
+
+  &:hover {
+    ${({ disabled }) => !disabled && css`
+      background: #f44336;
+    `}
+  }
 
   &:active {
     ${({ disabled }) => !disabled && css`
       transform: translateY(${rel(2)});
+      box-shadow: 0 ${rel(2)} ${rel(4)} rgba(0, 0, 0, 0.3);
     `}
   }
 `

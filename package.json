@@ -1,5 +1,5 @@
 {
-  "name": "word-impostor",
+  "name": "the-other-word",
   "version": "0.1.0",
   "private": true,
   "homepage": ".",
@@ -42,7 +42,7 @@
     "dev:logic": "rollup -c --watch",
     "build": "rollup -c",
     "build:full": "cross-env DISABLE_ESLINT_PLUGIN=true GENERATE_SOURCEMAP=false react-scripts build && rollup -c",
-    "deploy": "../../scripts/copy-assets.sh word-impostor && yarn build && rune upload build",
+    "deploy": "../../scripts/copy-assets.sh the-other-word && yarn build && rune upload build",
     "lint": "echo 'Linting disabled'",
     "typecheck": "tsc --noEmit"
   },

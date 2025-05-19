@@ -151,11 +151,11 @@ const SpectatingView = memo(() => {
         </CurrentSpeakerBadge>
       </PlayerInfo>
 
-      {/* Next speaker notification */}
+      {/* Next speaker notification - integrated into the speaking order to save space */}
       {isNextPlayer && (
-        <NextSpeakerAlert>
+        <NextSpeakerAlert compact>
           <AlertIcon>⚠️</AlertIcon>
-          You're speaking next! Get ready!
+          You're next!
         </NextSpeakerAlert>
       )}
 
@@ -303,17 +303,24 @@ const CurrentSpeakerBadge = styled.div`
   box-shadow: 0 ${rel(4)} ${rel(8)} rgba(0, 0, 0, 0.3);
 `
 
-const NextSpeakerAlert = styled.div`
+const NextSpeakerAlert = styled.div<{ compact?: boolean }>`
   display: flex;
   align-items: center;
-  background-color: #ff9900;
+  background-color: #ff6600; /* Darker orange for better contrast */
   color: #fff;
   font-weight: bold;
-  padding: ${rel(10)} ${rel(15)};
+  padding: ${props => props.compact ? `${rel(5)} ${rel(10)}` : `${rel(10)} ${rel(15)}`};
   border-radius: ${rel(10)};
-  margin: ${rel(15)} 0;
+  margin: ${props => props.compact ? `${rel(5)} 0` : `${rel(15)} 0`};
   animation: pulse 1.5s infinite;
   box-shadow: 0 ${rel(4)} ${rel(8)} rgba(0, 0, 0, 0.3);
+  font-size: ${props => props.compact ? rel(14) : rel(16)};
+  max-width: ${rel(200)};
+  justify-content: center;
+  position: ${props => props.compact ? 'absolute' : 'relative'};
+  top: ${props => props.compact ? rel(-15) : 'auto'};
+  right: ${props => props.compact ? rel(10) : 'auto'};
+  z-index: 10;
 
   @keyframes pulse {
     0% { transform: scale(1); }
