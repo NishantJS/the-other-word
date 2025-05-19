@@ -17,6 +17,7 @@ export const $state = atom<{
     impostorWord: "",
     currentTurn: null,
     votes: [],
+    reactions: [],
     gameOver: false,
     winningTeam: null,
   },
@@ -73,6 +74,8 @@ export const $round = atom((get) => get($game).round)
 export const $currentTurn = atom((get) => get($game).currentTurn)
 
 export const $votes = atom((get) => get($game).votes)
+
+export const $reactions = atom((get) => get($game).reactions)
 
 export const $gameOver = atom((get) => get($game).gameOver)
 

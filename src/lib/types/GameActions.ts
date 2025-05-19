@@ -9,4 +9,7 @@ export type GameActions = {
   }) => void
   nextRound: () => void
   finishDescribing: () => void
+  sendReaction: (reaction: {
+    emoji: string
+  }) => void
 }

@@ -11,6 +11,7 @@ export const resultDuration = 15       // 15 seconds to show results
 export const nonImpostorCatchPoints = 1 // Points for non-impostors when impostor is caught
 export const impostorSurvivePoints = 5  // Points for impostor if they survive to the end
 export const correctGuessPoints = 3     // Points for correctly guessing the impostor, even if not caught
+export const reactionThrottleTime = 2   // Time in seconds between allowed reactions (to prevent spam)
 
 // Game timing constants
 export const turnAlmostOverAt = 3
@@ -97,8 +98,9 @@ function startNewRound(game: GameState): void {
     completedDescribers: []
   }
 
-  // Clear votes from previous rounds
+  // Clear votes and reactions from previous rounds
   game.votes = []
+  game.reactions = []
 }
 
 // Helper function to check if the impostor was caught
@@ -239,6 +241,9 @@ function moveToNextDescriber(game: GameState): void {
     game.currentTurn.timerStartedAt = Rune.gameTime() / 1000
     game.currentTurn.previousDescriberId = currentDescriberId
     game.currentTurn.nextDescriberId = null
+
+    // Clear reactions when moving to voting stage
+    game.reactions = []
     return
   }
 
@@ -266,6 +271,9 @@ function moveToNextDescriber(game: GameState): void {
   game.currentTurn.nextDescriberId = nextNextIndex < game.currentTurn.descriptionOrder.length
     ? game.currentTurn.descriptionOrder[nextNextIndex]
     : null
+
+  // Clear reactions when moving to the next player
+  game.reactions = []
 
   game.currentTurn.timerStartedAt = Rune.gameTime() / 1000
 }
@@ -304,6 +312,7 @@ Rune.initLogic({
     impostorWord: "",
     currentTurn: null,
     votes: [],
+    reactions: [],
     gameOver: false,
     winningTeam: null,
   }),
@@ -449,6 +458,41 @@ Rune.initLogic({
 
       // Start a new round
       startNewRound(game)
+    },
+    sendReaction: ({ emoji }: { emoji: string }, { game, playerId }: { game: GameState, playerId: PlayerId }) => {
+      // Validate the action
+      if (!game.currentTurn) throw Rune.invalidAction()
+      if (game.currentTurn.stage !== "describing") throw Rune.invalidAction()
+
+      // Don't allow the current speaker to send reactions
+      if (game.currentTurn.currentDescriberId === playerId) throw Rune.invalidAction()
+
+      // Get the current time
+      const currentTime = Rune.gameTime() / 1000
+
+      // Check if the player has sent a reaction recently (throttling)
+      const playerReactions = game.reactions.filter((r) => r.playerId === playerId)
+      const lastReaction = playerReactions.length > 0
+        ? playerReactions[playerReactions.length - 1]
+        : null
+
+      if (lastReaction && currentTime - lastReaction.timestamp < reactionThrottleTime) {
+        // Too soon, ignore this reaction (throttling)
+        throw Rune.invalidAction()
+      }
+
+      // Add the reaction to the game state
+      game.reactions.push({
+        playerId,
+        emoji,
+        timestamp: currentTime
+      })
+
+      // Limit the number of stored reactions to prevent memory issues
+      // Keep only the 20 most recent reactions
+      if (game.reactions.length > 20) {
+        game.reactions = game.reactions.slice(-20)
+      }
     },
   },
   events: {

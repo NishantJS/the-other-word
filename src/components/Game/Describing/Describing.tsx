@@ -5,6 +5,8 @@ import { rel } from "../../../style/rel"
 import { memo, useEffect, useState } from "react"
 import { descriptionDuration } from "../../../logic"
 import { LineTimer } from "../../Timer/LineTimer"
+import { Reactions } from "./Reactions"
+import { EmoteSelector } from "./EmoteSelector"
 // Lottie animations removed to clean up the project
 
 // Countdown timer component to show remaining time
@@ -57,6 +59,9 @@ export const Describing = memo(() => {
   // If player is describing, show their secret word
   return (
     <Root>
+      {/* Display reactions from other players */}
+      <Reactions />
+
       <TimerContainer>
         <LineTimer
           startedAt={currentTurn?.timerStartedAt || 0}
@@ -86,6 +91,7 @@ export const Describing = memo(() => {
         <p>Be careful! One player has a slightly different word.</p>
         <p>You have 15 seconds to describe your word.</p>
         <p>Try to be clear but not too specific with your description.</p>
+        <p>Watch for suspicious reactions from other players!</p>
       </Instructions>
 
       <div style={{ height: rel(30) }} />
@@ -127,6 +133,9 @@ const SpectatingView = memo(() => {
 
   return (
     <Root>
+      {/* Display reactions from all players */}
+      <Reactions />
+
       <TimerContainer>
         <LineTimer
           startedAt={currentTurn?.timerStartedAt || 0}
@@ -185,7 +194,11 @@ const SpectatingView = memo(() => {
         <p>Listen carefully to {describingPlayer.displayName}'s description.</p>
         <p>Try to identify if they have a different word than others.</p>
         <p>After everyone has spoken, you'll vote on who you think is the impostor.</p>
+        <p>Use the detective button <span role="img" aria-label="detective">🕵️</span> to show your suspicion!</p>
       </Instructions>
+
+      {/* Emote selector for reactions */}
+      <EmoteSelector />
     </Root>
   )
 })

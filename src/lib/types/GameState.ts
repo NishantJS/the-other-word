@@ -52,6 +52,12 @@ export type Vote = {
   round: number
 }
 
+export type Reaction = {
+  playerId: PlayerId
+  emoji: string
+  timestamp: number
+}
+
 type Score = {
   nonImpostor: number  // Points earned as a non-impostor
   impostor: number     // Points earned as an impostor
@@ -101,6 +107,7 @@ export interface GameState {
     completedDescribers?: PlayerId[]     // IDs of players who have already described
   } | null
   votes: Vote[]
+  reactions: Reaction[]  // Reactions from players during the describing phase
   gameOver: boolean
   winningTeam: "nonImpostors" | "impostor" | null  // Who won the game
 }
