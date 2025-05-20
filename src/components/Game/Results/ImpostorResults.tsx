@@ -1,10 +1,15 @@
 import { useAtomValue } from "jotai"
 import { $currentTurn, $gameOver, $yourPlayerId, $playersInfo, $game, $players } from "../../../state/$state"
-import styled, { css } from "styled-components/macro"
+import styled, { css, keyframes } from "styled-components/macro"
 import { rel } from "../../../style/rel"
 import { memo, useEffect } from "react"
-// Lottie animations removed to clean up the project
 import { sounds } from "../../../sounds/sounds"
+
+const popIn = keyframes`
+  0% { transform: scale(0.8); opacity: 0; }
+  70% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+`;
 
 export const ImpostorResults = memo(() => {
   const currentTurn = useAtomValue($currentTurn)
@@ -15,9 +20,6 @@ export const ImpostorResults = memo(() => {
   useEffect(() => {
     sounds.endOfTurn.play()
   }, [])
-
-  // We've removed the auto-advance functionality to prevent state desync issues
-  // Players will need to manually click the continue button
 
   if (!currentTurn) return null
 
@@ -49,213 +51,230 @@ export const ImpostorResults = memo(() => {
   const isImpostorCaught = currentTurn.impostorCaught
   const isYouImpostor = gamePlayers.find(p => p.id === yourPlayerId)?.isImpostor
 
+  // Shortened versions of the result messages
+  const resultMessage = isImpostorCaught
+    ? isYouImpostor 
+      ? "You were discovered!"
+      : "Impostor found!"
+    : isYouImpostor
+      ? "You blended in!"
+      : "Impostor escaped!";
+
+  // Shortened versions of the game over messages
+  const gameOverMessage = isImpostorCaught
+    ? isYouImpostor 
+      ? "Team Wins" 
+      : "Your Team Wins"
+    : isYouImpostor 
+      ? "You Win" 
+      : "Impostor Wins";
+
   return (
     <Root>
-
-      <Title>
-        {isImpostorCaught
-          ? "Impostor Caught!"
-          : "Impostor Survived!"}
-      </Title>
-
-      <ImpostorCard caught={isImpostorCaught}>
-        <AvatarImg src={impostorPlayer.avatarUrl} />
-        <ImpostorName>
-          {impostorPlayer.id === yourPlayerId
-            ? "You"
-            : impostorPlayer.displayName}
-          {impostorPlayer.id === yourPlayerId && " (You)"}
-        </ImpostorName>
-        <ImpostorLabelContainer>
-          <ImpostorLabel>The Impostor</ImpostorLabel>
-          {impostorPlayer.isBot && <BotIndicator>🤖 Bot</BotIndicator>}
-        </ImpostorLabelContainer>
-
-        <WordsContainer>
-          <WordCard>
-            <WordLabel>Team Word:</WordLabel>
-            <Word>{gameState.currentWord}</Word>
-          </WordCard>
-
-          <WordCard>
-            <WordLabel>Impostor Word:</WordLabel>
-            <Word>{gameState.impostorWord}</Word>
-          </WordCard>
-        </WordsContainer>
-      </ImpostorCard>
-
-      <ResultMessage>
-        {isImpostorCaught ? (
-          isYouImpostor ? (
-            "You were caught! The team figured out you had a different word."
-          ) : (
-            "Good job! Your team successfully identified the impostor."
-          )
-        ) : (
-          isYouImpostor ? (
-            "You survived! No one figured out you had a different word."
-          ) : (
-            "The impostor tricked everyone and survived this round!"
-          )
-        )}
-      </ResultMessage>
-
+      <ResultStatus caught={isImpostorCaught}>
+        {isImpostorCaught ? "👮‍♂️" : "🏃‍♂️"}
+      </ResultStatus>
+      
+      <CompactImpostorCard caught={isImpostorCaught}>
+        <AvatarContainer>
+          <AvatarImg src={impostorPlayer.avatarUrl} />
+          {impostorPlayer.isBot && <BotBadge>🤖</BotBadge>}
+        </AvatarContainer>
+        
+        <ImpostorInfo>
+          <ImpostorName>
+            {impostorPlayer.id === yourPlayerId ? "You" : impostorPlayer.displayName}
+          </ImpostorName>
+          <ImpostorLabel>Impostor</ImpostorLabel>
+        </ImpostorInfo>
+      </CompactImpostorCard>
+      
+      <WordsRow>
+        <WordCard>
+          <WordValue>{gameState.currentWord}</WordValue>
+          <WordLabel>Team Word</WordLabel>
+        </WordCard>
+        
+        <WordDivider>≠</WordDivider>
+        
+        <WordCard>
+          <WordValue>{gameState.impostorWord}</WordValue>
+          <WordLabel>Impostor Word</WordLabel>
+        </WordCard>
+      </WordsRow>
+      
+      <ResultMessage>{resultMessage}</ResultMessage>
+      
       {gameOver ? (
         <>
-          <GameOverMessage>
-            {isImpostorCaught ? (
-              isYouImpostor ? (
-                "Game Over - The team wins!"
-              ) : (
-                "Game Over - Your team wins!"
-              )
-            ) : (
-              isYouImpostor ? (
-                "Game Over - You win!"
-              ) : (
-                "Game Over - The impostor wins!"
-              )
-            )}
-          </GameOverMessage>
-          <ContinueButton onClick={() => Rune.showGameOverPopUp()}>
-            Show Final Scores
-          </ContinueButton>
+          <GameOverBadge>{gameOverMessage}</GameOverBadge>
+          <NextButton onClick={() => Rune.showGameOverPopUp()}>
+            Final Scores
+          </NextButton>
         </>
       ) : (
-        <ContinueButton onClick={() => Rune.actions?.nextRound?.()}>
-          Continue to Next Round
-        </ContinueButton>
+        <NextButton onClick={() => Rune.actions?.nextRound?.()}>
+          Next Round
+        </NextButton>
       )}
     </Root>
   )
 })
 
 const Root = styled.div`
-  animation: fadeIn 300ms ease-out forwards;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: ${rel(20)};
+  justify-content: flex-start;
+  padding: ${rel(10)} ${rel(4)};
   height: 100%;
   position: relative;
 `
 
-const Title = styled.div`
-  font-size: ${rel(36)};
-  font-weight: bold;
-  color: white;
-  margin-bottom: ${rel(24)};
-  text-align: center;
-  text-shadow: 0 ${rel(3)} 0 rgba(0, 0, 0, 0.35);
+const ResultStatus = styled.div<{ caught: boolean }>`
+  font-size: ${rel(40)};
+  margin-bottom: ${rel(16)};
+  animation: ${popIn} 0.5s forwards;
 `
 
-const ImpostorCard = styled.div<{ caught: boolean }>`
+// New compact impostor card design
+const CompactImpostorCard = styled.div<{ caught: boolean }>`
   display: flex;
-  flex-direction: column;
   align-items: center;
   background-color: ${({ caught }) => caught ? 'rgba(233, 54, 67, 0.3)' : 'rgba(91, 182, 0, 0.3)'};
   border: ${rel(2)} solid ${({ caught }) => caught ? '#e93643' : '#5bb600'};
   border-radius: ${rel(16)};
-  padding: ${rel(20)};
-  margin-bottom: ${rel(24)};
+  padding: ${rel(12)};
+  margin-bottom: ${rel(20)};
   width: 90%;
   max-width: ${rel(350)};
+  animation: ${popIn} 0.6s forwards;
+  box-shadow: 0 ${rel(4)} ${rel(12)} rgba(0, 0, 0, 0.3);
+`
+
+const AvatarContainer = styled.div`
+  position: relative;
+  margin-right: ${rel(12)};
 `
 
 const AvatarImg = styled.img`
-  width: ${rel(80)};
-  height: ${rel(80)};
+  width: ${rel(60)};
+  height: ${rel(60)};
   border-radius: 50%;
   border: ${rel(3)} solid white;
-  margin-bottom: ${rel(12)};
+`
+
+const ImpostorInfo = styled.div`
+  display: flex;
+  flex-direction: column;
 `
 
 const ImpostorName = styled.div`
-  font-size: ${rel(24)};
+  font-size: ${rel(20)};
   font-weight: bold;
   color: white;
-  margin-bottom: ${rel(4)};
-`
-
-const ImpostorLabelContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: ${rel(16)};
+  margin-bottom: ${rel(2)};
 `
 
 const ImpostorLabel = styled.div`
-  font-size: ${rel(18)};
+  font-size: ${rel(16)};
   color: #e4faff;
 `
 
-const BotIndicator = styled.div`
-  font-size: ${rel(14)};
-  color: #00bcd4;
-  background-color: rgba(0, 0, 0, 0.3);
-  padding: ${rel(2)} ${rel(8)};
-  border-radius: ${rel(10)};
-  margin-top: ${rel(4)};
+const BotBadge = styled.div`
+  position: absolute;
+  bottom: ${rel(-5)};
+  right: ${rel(-5)};
+  font-size: ${rel(16)};
+  background-color: rgba(0, 0, 0, 0.6);
+  border-radius: 50%;
+  width: ${rel(26)};
+  height: ${rel(26)};
   display: flex;
   align-items: center;
+  justify-content: center;
+  border: ${rel(2)} solid #00bcd4;
 `
 
-const WordsContainer = styled.div`
+// Word comparison row
+const WordsRow = styled.div`
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  gap: ${rel(12)};
+  margin-bottom: ${rel(20)};
+  animation: ${popIn} 0.7s forwards;
 `
 
 const WordCard = styled.div`
   background-color: rgba(0, 0, 0, 0.2);
   border-radius: ${rel(8)};
-  padding: ${rel(12)};
+  padding: ${rel(10)};
+  width: 42%;
+  text-align: center;
 `
 
 const WordLabel = styled.div`
-  font-size: ${rel(14)};
+  font-size: ${rel(12)};
   color: #e4faff;
-  margin-bottom: ${rel(4)};
+  margin-top: ${rel(4)};
 `
 
-const Word = styled.div`
-  font-size: ${rel(20)};
+const WordValue = styled.div`
+  font-size: ${rel(18)};
   font-weight: bold;
   color: white;
   text-transform: uppercase;
 `
 
+const WordDivider = styled.div`
+  font-size: ${rel(24)};
+  font-weight: bold;
+  color: #ffcc00;
+  margin: 0 ${rel(10)};
+`
+
 const ResultMessage = styled.div`
-  font-size: ${rel(18)};
+  font-size: ${rel(22)};
   color: white;
   text-align: center;
   margin-bottom: ${rel(24)};
-  max-width: ${rel(350)};
+  animation: ${popIn} 0.8s forwards;
 `
 
-const GameOverMessage = styled.div`
+// Game over badge with animation
+const GameOverBadge = styled.div`
   font-size: ${rel(24)};
   font-weight: bold;
   color: #ffcc00;
   text-align: center;
-  margin-top: ${rel(16)};
+  margin-top: ${rel(5)};
+  margin-bottom: ${rel(15)};
+  padding: ${rel(8)} ${rel(16)};
+  border-radius: ${rel(12)};
+  background: linear-gradient(to right, rgba(92, 45, 145, 0.7), rgba(0, 0, 0, 0.5));
+  border: ${rel(2)} solid rgba(255, 204, 0, 0.6);
+  animation: ${popIn} 0.9s forwards;
+  box-shadow: 0 ${rel(4)} ${rel(8)} rgba(0, 0, 0, 0.4);
 `
 
-const ContinueButton = styled.button`
-  background: #5c2d91;
+const NextButton = styled.button`
+  background: linear-gradient(to bottom, #6e35ab, #5c2d91);
   color: white;
-  font-size: ${rel(20)};
+  font-size: ${rel(18)};
+  font-weight: bold;
   padding: ${rel(12)} ${rel(24)};
   border-radius: ${rel(12)};
   border: none;
-  margin-top: ${rel(16)};
+  margin-top: auto;
+  margin-bottom: ${rel(10)};
   cursor: pointer;
+  box-shadow: 0 ${rel(4)} ${rel(8)} rgba(0, 0, 0, 0.3);
+  transition: transform 0.1s ease-in-out;
+  animation: ${popIn} 1s forwards;
 
   &:active {
     transform: translateY(${rel(2)});
+    background: linear-gradient(to bottom, #5c2d91, #4e2678);
   }
 `
-
-// Confetti animation removed

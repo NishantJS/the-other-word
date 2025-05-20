@@ -31,7 +31,7 @@ const pulse = keyframes`
   100% { transform: scale(1); }
 `;
 
-export const Countdown = memo(() => {
+export const CountdownNew = memo(() => {
   const yourPlayer = useAtomValue($yourPlayer)
   const round = useAtomValue($round)
   const currentTurn = useAtomValue($currentTurn)
@@ -110,7 +110,7 @@ const Root = styled.div`
   justify-content: center;
   height: 100%;
   animation: ${fadeInUp} 0.4s ease-out forwards;
-`
+`;
 
 const RoundLabel = styled.div`
   font-size: ${rel(42)};
@@ -120,7 +120,7 @@ const RoundLabel = styled.div`
   letter-spacing: ${rel(1)};
   margin-bottom: ${rel(8)};
   animation: ${popIn} 0.5s ease-out forwards;
-`
+`;
 
 const RoundNumber = styled.div`
   font-size: ${rel(64)};
@@ -129,7 +129,7 @@ const RoundNumber = styled.div`
   margin-top: ${rel(4)};
   text-shadow: 0 ${rel(4)} ${rel(8)} rgba(0, 0, 0, 0.5);
   animation: ${pulse} 2s infinite ease-in-out;
-`
+`;
 
 const UpNext = styled.div`
   display: flex;
@@ -137,14 +137,14 @@ const UpNext = styled.div`
   align-items: center;
   margin: ${rel(20)} 0 ${rel(30)};
   animation: ${popIn} 0.6s ease-out forwards;
-`
+`;
 
 const PlayerContainer = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: ${rel(12)};
-`
+`;
 
 const AvatarWrapper = styled.div<{ isBot: boolean }>`
   position: relative;
@@ -153,14 +153,14 @@ const AvatarWrapper = styled.div<{ isBot: boolean }>`
   padding: ${rel(2)};
   background: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(0,0,0,0.1));
   box-shadow: 0 ${rel(5)} ${rel(15)} rgba(0, 0, 0, 0.3);
-`
+`;
 
 const Avatar = styled.img`
   width: ${rel(100)};
   height: ${rel(100)};
   border-radius: 50%;
   animation: ${pulse} 3s infinite ease-in-out;
-`
+`;
 
 const BotIndicator = styled.div`
   position: absolute;
@@ -175,7 +175,7 @@ const BotIndicator = styled.div`
   align-items: center;
   font-size: ${rel(16)};
   border: ${rel(2)} solid #00bcd4;
-`
+`;
 
 const UpNextLabel = styled.div`
   font-size: ${rel(28)};
@@ -183,14 +183,14 @@ const UpNextLabel = styled.div`
   text-shadow: 0 ${rel(2)} ${rel(4)} rgba(0, 0, 0, 0.4);
   text-align: center;
   color: white;
-`
+`;
 
 const NextUpSpan = styled.div`
   font-size: ${rel(22)};
   color: #e4faff;
   font-weight: normal;
   margin-top: ${rel(4)};
-`
+`;
 
 const YourTurnLabel = styled.div`
   font-size: ${rel(48)};
@@ -199,9 +199,9 @@ const YourTurnLabel = styled.div`
   text-shadow: 0 ${rel(3)} ${rel(6)} rgba(0, 0, 0, 0.5);
   text-transform: uppercase;
   animation: ${pulse} 1.5s infinite ease-in-out;
-`
+`;
 
 const TimerWrapper = styled.div`
   animation: ${popIn} 0.7s ease-out forwards;
   filter: drop-shadow(0 ${rel(4)} ${rel(8)} rgba(0, 0, 0, 0.3));
-`
+`;

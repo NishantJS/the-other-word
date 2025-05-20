@@ -1,6 +1,6 @@
 import { useAtomValue } from "jotai"
 import { $players, $yourPlayer, $game } from "../../state/$state"
-import { useMemo, memo } from "react"
+import { useMemo, memo, useState } from "react"
 import styled from "styled-components/macro"
 
 import logo from "./new-logo.svg"
@@ -11,6 +11,7 @@ export const Start = memo(() => {
   const players = useAtomValue($players)
   const yourPlayer = useAtomValue($yourPlayer)
   const game = useAtomValue($game)
+  const [showSettings, setShowSettings] = useState(false)
 
   const numReady = useMemo(
     () => players.filter((p) => p.readyToStart).length,
@@ -31,43 +32,61 @@ export const Start = memo(() => {
 
   return (
     <Root>
-      <LogoImg src={logo} />
-      <ReadyLabel>
-        {numReady}/{players.length} Players Ready
-      </ReadyLabel>
+      <LogoContainer>
+        <LogoImg src={logo} />
+        <GameTitle>THE OTHER WORD</GameTitle>
+      </LogoContainer>
+      
+      <ContentContainer>
+        <PlayerCounter>
+          <PlayerCountValue>{numReady}/{players.length}</PlayerCountValue>
+          <PlayerCountLabel>Players Ready</PlayerCountLabel>
+        </PlayerCounter>
 
-      {/* Bot information for fewer than 3 players */}
-      {showBotInfo && (
-        <BotInfoMessage>
-          Not enough players! Bots will be added to reach the minimum of 3 players.
-        </BotInfoMessage>
-      )}
+        <OptionsContainer>
+          {/* Bot information for fewer than 3 players */}
+          {showBotInfo && (
+            <InfoCard warning>
+              <InfoText>Not enough players. Bots will be added automatically.</InfoText>
+            </InfoCard>
+          )}
 
-      {/* Bot toggle button for 3-5 players */}
-      {showBotToggle && (
-        <BotToggleButton onClick={() => Rune.actions.toggleBots()}>
-          <div>
-            {game.useBots ? "Disable Bots" : "Enable Bots"}
-          </div>
-        </BotToggleButton>
-      )}
+          {/* Bot toggle button for 3-5 players */}
+          {showBotToggle && (
+            <ToggleContainer>
+              <ToggleLabel>Bots</ToggleLabel>              <ToggleSwitch 
+                active={game.useBots}
+                onClick={() => Rune.actions.toggleBots()}
+              >
+                <ToggleSwitchTrack active={game.useBots}>
+                  <ToggleSwitchThumb active={game.useBots} />
+                </ToggleSwitchTrack>
+                <ToggleSwitchLabel>{game.useBots ? "On" : "Off"}</ToggleSwitchLabel>
+              </ToggleSwitch>
+            </ToggleContainer>
+          )}
 
-      {/* Bot status indicator */}
-      {game.useBots && (
-        <BotStatusIndicator>
-          Bots: Enabled ({game.botCount} will be added)
-        </BotStatusIndicator>
-      )}
+          {/* Bot status indicator */}
+          {game.useBots && (
+            <InfoCard success>
+              <InfoText>{game.botCount} bot{game.botCount > 1 ? 's' : ''} will join the game</InfoText>
+            </InfoCard>
+          )}
 
-      {/* Add the AISettings component */}
-      <AISettings />
+          <SettingsButton onClick={() => setShowSettings(!showSettings)}>
+            {showSettings ? "Hide Settings" : "Game Settings"}
+          </SettingsButton>
+          
+          {showSettings && <AISettings />}
+        </OptionsContainer>
 
-      <ReadyButton
-        style={{ opacity: yourPlayer && !yourPlayer.readyToStart ? 1 : 0 }}
-        onClick={() => Rune.actions.setReadyToStart()}
-      >
-        <div>I'm Ready</div>
-      </ReadyButton>
+        <ReadyButton
+          disabled={yourPlayer && yourPlayer.readyToStart}
+          onClick={() => Rune.actions.setReadyToStart()}
+        >
+          {yourPlayer && yourPlayer.readyToStart ? "Waiting for others..." : "I'm Ready"}
+        </ReadyButton>
+      </ContentContainer>
     </Root>
   )
 })
@@ -78,161 +97,218 @@ const Root = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: space-around;
-  padding: 5vh 0;
-  background: radial-gradient(
-    62.56% 62.56% at 50% 44.09%,
-    #9c27b0 0%,
-    #4a148c 81.77%,
-    #311b92 100%
-  );
+  justify-content: space-between;
+  padding: 4vh 0;
+  background: linear-gradient(180deg, #5f3dc4 0%, #462297 50%, #311b92 100%);
+  position: relative;
+  height: 100%;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 25% 25%, rgba(255,255,255,0.1) 0%, transparent 40%),
+                radial-gradient(circle at 75% 75%, rgba(255,255,255,0.05) 0%, transparent 40%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  
+  > * {
+    position: relative;
+    z-index: 1;
+  }
+`
+
+const LogoContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: ${rel(30)};
 `
 
 const LogoImg = styled.img`
-  width: ${rel(231)};
+  width: ${rel(180)};
+  filter: drop-shadow(0 ${rel(4)} ${rel(6)} rgba(0, 0, 0, 0.2));
 `
 
-const ReadyLabel = styled.div`
-  font-size: ${rel(28)};
-  text-shadow: 0 ${rel(3)} 0 rgba(0, 0, 0, 0.5);
-  text-align: center;
+const GameTitle = styled.h1`
+  font-size: ${rel(36)};
+  font-weight: bold;
   color: white;
-  font-weight: bold;
-  background-color: rgba(0, 0, 0, 0.2);
-  padding: ${rel(10)} ${rel(20)};
-  border-radius: ${rel(12)};
-  margin: ${rel(15)} 0;
-`
-
-export const ReadyButton = styled.div`
-  width: ${rel(336)};
-  transition: opacity 150ms ease-out;
-
-  background: linear-gradient(180deg, #7b1fa2 0%, #9c27b0 100%);
-  border-radius: ${rel(24)};
-  padding: ${rel(8)};
-  box-shadow: 0 ${rel(4)} ${rel(8)} rgba(0, 0, 0, 0.3);
-  margin-top: ${rel(10)};
-
-  > div {
-    background: white;
-    border-radius: ${rel(24 - 8)};
-    font-size: ${rel(24)};
-    color: #4a148c;
-    font-weight: bold;
-    padding: ${rel(32 - 8)};
-    text-align: center;
-  }
-
-  &:hover {
-    background: linear-gradient(180deg, #9c27b0 0%, #7b1fa2 100%);
-  }
-
-  &:active {
-    transform: translateY(${rel(2)});
-    box-shadow: 0 ${rel(2)} ${rel(4)} rgba(0, 0, 0, 0.3);
-  }
-`
-
-const BotToggleButton = styled.div`
-  width: ${rel(250)};
-  transition: opacity 150ms ease-out;
-  margin: ${rel(10)} 0;
-
-  background: linear-gradient(180deg, #4a148c 0%, #311b92 100%);
-  border-radius: ${rel(20)};
-  padding: ${rel(6)};
-  box-shadow: 0 ${rel(4)} ${rel(8)} rgba(0, 0, 0, 0.3);
-
-  > div {
-    background: white;
-    border-radius: ${rel(20 - 6)};
-    font-size: ${rel(18)};
-    color: #4a148c;
-    font-weight: bold;
-    padding: ${rel(16)};
-    text-align: center;
-  }
-
-  &:hover {
-    background: linear-gradient(180deg, #311b92 0%, #4a148c 100%);
-  }
-
-  &:active {
-    transform: translateY(${rel(2)});
-    box-shadow: 0 ${rel(2)} ${rel(4)} rgba(0, 0, 0, 0.3);
-  }
-`
-
-const BotInfoMessage = styled.div`
-  font-size: ${rel(18)};
-  text-shadow: 0 ${rel(2)} 0 rgba(0, 0, 0, 0.5);
+  margin: ${rel(10)} 0 0;
+  letter-spacing: ${rel(2)};
   text-align: center;
-  color: #ffeb3b;
-  font-weight: bold;
-  background-color: rgba(0, 0, 0, 0.3);
-  padding: ${rel(12)} ${rel(16)};
-  border-radius: ${rel(12)};
-  margin: ${rel(10)} 0;
-  max-width: ${rel(300)};
 `
 
-const BotStatusIndicator = styled.div`
-  font-size: ${rel(16)};
-  text-shadow: 0 ${rel(1)} 0 rgba(0, 0, 0, 0.5);
-  text-align: center;
-  color: #8bc34a;
-  font-weight: bold;
-  background-color: rgba(0, 0, 0, 0.2);
-  padding: ${rel(8)} ${rel(12)};
-  border-radius: ${rel(12)};
-  margin: ${rel(8)} 0;
-`
-
-const FeatureToggleButton = styled.div`
-  width: ${rel(200)};
-  transition: opacity 150ms ease-out;
-  margin: ${rel(6)} 0;
-
-  background: linear-gradient(180deg, #311b92 0%, #4a148c 100%);
-  border-radius: ${rel(16)};
-  padding: ${rel(4)};
-  box-shadow: 0 ${rel(4)} ${rel(8)} rgba(0, 0, 0, 0.3);
-
-  > div {
-    background: white;
-    border-radius: ${rel(16 - 4)};
-    font-size: ${rel(16)};
-    color: #4a148c;
-    font-weight: bold;
-    padding: ${rel(12)};
-    text-align: center;
-  }
-
-  &:hover {
-    background: linear-gradient(180deg, #4a148c 0%, #311b92 100%);
-  }
-
-  &:active {
-    transform: translateY(${rel(2)});
-    box-shadow: 0 ${rel(2)} ${rel(4)} rgba(0, 0, 0, 0.3);
-  }
-`
-
-const FeatureStatusContainer = styled.div`
+const ContentContainer = styled.div`
   display: flex;
-  justify-content: center;
-  gap: ${rel(12)};
-  margin: ${rel(8)} 0;
+  flex-direction: column;
+  align-items: center;
+  width: 90%;
+  max-width: ${rel(400)};
 `
 
-const FeatureStatus = styled.div<{ enabled: boolean }>`
-  font-size: ${rel(14)};
-  text-shadow: 0 ${rel(1)} 0 rgba(0, 0, 0, 0.5);
-  text-align: center;
-  color: ${props => props.enabled ? '#8bc34a' : '#ff9800'};
+const PlayerCounter = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: ${rel(30)};
+`
+
+const PlayerCountValue = styled.div`
+  font-size: ${rel(36)};
   font-weight: bold;
-  background-color: rgba(0, 0, 0, 0.2);
-  padding: ${rel(4)} ${rel(8)};
-  border-radius: ${rel(10)};
+  color: white;
+  text-shadow: 0 ${rel(2)} ${rel(4)} rgba(0, 0, 0, 0.3);
+`
+
+const PlayerCountLabel = styled.div`
+  font-size: ${rel(18)};
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: ${rel(5)};
+`
+
+const OptionsContainer = styled.div`
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: ${rel(16)};
+  margin-bottom: ${rel(40)};
+`
+
+const InfoCard = styled.div<{ warning?: boolean; success?: boolean }>`
+  font-size: ${rel(16)};
+  text-align: center;
+  color: ${props => props.warning ? '#212121' : 'white'};
+  background-color: ${props => 
+    props.warning ? 'rgba(255, 193, 7, 0.9)' : 
+    props.success ? 'rgba(76, 175, 80, 0.8)' : 
+    'rgba(255, 255, 255, 0.15)'};
+  padding: ${rel(12)} ${rel(16)};
+  border-radius: ${rel(8)};
+  width: 100%;
+  backdrop-filter: blur(5px);
+  box-shadow: 0 ${rel(2)} ${rel(8)} rgba(0, 0, 0, 0.2);
+`
+
+const InfoText = styled.div`
+  font-size: ${rel(14)};
+  line-height: 1.4;
+`
+
+const ToggleContainer = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  background-color: rgba(255, 255, 255, 0.15);
+  padding: ${rel(12)} ${rel(16)};
+  border-radius: ${rel(8)};
+  backdrop-filter: blur(5px);
+  box-shadow: 0 ${rel(2)} ${rel(8)} rgba(0, 0, 0, 0.2);
+`
+
+const ToggleLabel = styled.div`
+  font-size: ${rel(16)};
+  color: white;
+  font-weight: 500;
+`
+
+const ToggleSwitch = styled.div<{ active: boolean }>`
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+`
+
+const ToggleSwitchTrack = styled.div<{ active?: boolean }>`
+  width: ${rel(42)};
+  height: ${rel(22)};
+  background-color: ${props => props.active ? 'rgba(76, 175, 80, 0.6)' : 'rgba(255, 255, 255, 0.3)'};
+  border-radius: ${rel(11)};
+  position: relative;
+  transition: background-color 150ms ease-out;
+`
+
+const ToggleSwitchThumb = styled.div<{ active: boolean }>`
+  width: ${rel(18)};
+  height: ${rel(18)};
+  background-color: white;
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: ${props => props.active ? `calc(100% - ${rel(20)})` : `${rel(2)}`};
+  transform: translateY(-50%);
+  transition: left 150ms ease-out;
+  box-shadow: 0 ${rel(1)} ${rel(3)} rgba(0, 0, 0, 0.2);
+`
+
+const ToggleSwitchLabel = styled.div`
+  font-size: ${rel(14)};
+  color: white;
+  margin-left: ${rel(8)};
+`
+
+const SettingsButton = styled.button`
+  font-size: ${rel(16)};
+  color: white;
+  background-color: rgba(255, 255, 255, 0.15);
+  padding: ${rel(12)} ${rel(16)};
+  border: none;
+  border-radius: ${rel(8)};
+  cursor: pointer;
+  text-align: center;
+  width: 100%;
+  font-weight: 500;
+  backdrop-filter: blur(5px);
+  box-shadow: 0 ${rel(2)} ${rel(8)} rgba(0, 0, 0, 0.2);
+  transition: background-color 150ms ease-out;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.25);
+  }
+  
+  &:active {
+    transform: translateY(${rel(1)});
+    box-shadow: 0 ${rel(1)} ${rel(4)} rgba(0, 0, 0, 0.2);
+  }
+`
+
+export const ReadyButton = styled.button<{ disabled?: boolean }>`
+  width: 85%;
+  max-width: ${rel(336)};
+  background: ${props => props.disabled ? 
+    'linear-gradient(180deg, #5e35b1 0%, #4527a0 100%)' : 
+    'linear-gradient(180deg, #8e24aa 0%, #6a1b9a 100%)'};
+  border: none;
+  border-radius: ${rel(12)};
+  color: white;
+  font-size: ${rel(20)};
+  font-weight: 600;
+  padding: ${rel(16)} ${rel(24)};
+  text-align: center;
+  cursor: ${props => props.disabled ? 'default' : 'pointer'};
+  opacity: ${props => props.disabled ? 0.7 : 1};
+  box-shadow: ${props => props.disabled ? 
+    'none' : 
+    `0 ${rel(4)} ${rel(12)} rgba(0, 0, 0, 0.3)`};
+  transition: all 150ms ease-out;
+  text-transform: uppercase;
+  letter-spacing: ${rel(1)};
+
+  &:hover {
+    background: ${props => props.disabled ? 
+      'linear-gradient(180deg, #5e35b1 0%, #4527a0 100%)' : 
+      'linear-gradient(180deg, #9c27b0 0%, #7b1fa2 100%)'};
+    transform: ${props => props.disabled ? 'none' : `translateY(${rel(-2)})`};
+  }
+
+  &:active {
+    transform: ${props => props.disabled ? 'none' : `translateY(${rel(1)})`};
+    box-shadow: ${props => props.disabled ? 
+      'none' : 
+      `0 ${rel(2)} ${rel(4)} rgba(0, 0, 0, 0.3)`};
+  }
 `
