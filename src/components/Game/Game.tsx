@@ -4,7 +4,7 @@ import styled, { css, createGlobalStyle, keyframes } from "styled-components/mac
 import { CountdownNew } from "./CountdownNew"
 import { Describing } from "./Describing/Describing"
 import { Voting } from "./Voting/Voting"
-import { ImpostorResults } from "./Results/ImpostorResults"
+import { ImpostorResultsNew } from "./Results/ImpostorResultsNew"
 import { memo, useEffect, useState } from "react"
 import { rel } from "../../style/rel"
 import { BotSpeech } from "./BotSpeech/BotSpeech"
@@ -49,9 +49,8 @@ const StageIcon = memo(({ stage }: { stage: string }) => {
     const timer = setTimeout(() => setIsAnimated(false), 1000);
     return () => clearTimeout(timer);
   }, [stage]);
-  
   let icon = "⏱️";
-  if (stage === "describing") icon = "🎤";
+  if (stage === "describing") icon = "👁️";
   if (stage === "voting") icon = "🔍";
   if (stage === "result") icon = "🏆";
   
@@ -119,10 +118,9 @@ export const Game = memo(() => {
   }, [currentTurn?.stage, prevStage]);
 
   if (!currentTurn) return null
-  
-  // Handle different stage types with a switch statement for better readability
+    // Handle different stage types with a switch statement for better readability
   let content = null;
-    switch (currentTurn.stage) {
+  switch (currentTurn.stage) {
     case "countdown":
       content = <CountdownNew />;
       break;
@@ -133,7 +131,7 @@ export const Game = memo(() => {
       content = <Voting />;
       break;
     case "result":
-      content = <ImpostorResults />;
+      content = <ImpostorResultsNew />;
       break;
     default:
       // Type safety - should never reach here

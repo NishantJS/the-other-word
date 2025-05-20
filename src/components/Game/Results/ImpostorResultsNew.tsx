@@ -23,7 +23,7 @@ const pulse = keyframes`
   100% { transform: scale(1); }
 `;
 
-export const ImpostorResults = memo(() => {
+export const ImpostorResultsNew = memo(() => {
   const currentTurn = useAtomValue($currentTurn)
   const gameOver = useAtomValue($gameOver)
   const yourPlayerId = useAtomValue($yourPlayerId)
@@ -263,18 +263,54 @@ const WordValue = styled.div`
   color: white;
   text-transform: uppercase;
 `
-  padding: ${rel(12)} ${rel(24)};
+
+const WordDivider = styled.div`
+  font-size: ${rel(14)};
+  color: #e4faff;
+  opacity: 0.6;
+`
+
+const OutcomeSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: ${rel(14)};
+  width: 100%;
+  animation: ${fadeInUp} 0.8s forwards;
+`
+
+const GameOverBadge = styled.div<{ caught: boolean }>`
+  font-size: ${rel(22)};
+  font-weight: bold;
+  color: ${props => props.caught ? '#ffcc00' : '#00ccbb'};
+  text-align: center;
+  padding: ${rel(8)} ${rel(20)};
+  border-radius: ${rel(14)};
+  background: rgba(0, 0, 0, 0.3);
+  border: ${rel(2)} solid ${props => props.caught ? 'rgba(255, 204, 0, 0.4)' : 'rgba(0, 204, 187, 0.4)'};
+  animation: ${pulse} 2s infinite;
+`
+
+const ActionButton = styled.button<{ primary?: boolean }>`
+  background: ${props => props.primary 
+    ? 'linear-gradient(to bottom, #6e35ab, #5c2d91)' 
+    : 'linear-gradient(to bottom, #2d8091, #1a6275)'};
+  color: white;
+  font-size: ${props => props.primary ? rel(18) : rel(16)};
+  font-weight: bold;
+  padding: ${rel(10)} ${rel(20)};
   border-radius: ${rel(12)};
   border: none;
-  margin-top: auto;
-  margin-bottom: ${rel(10)};
   cursor: pointer;
   box-shadow: 0 ${rel(4)} ${rel(8)} rgba(0, 0, 0, 0.3);
-  transition: transform 0.1s ease-in-out;
-  animation: ${popIn} 1s forwards;
+  transition: transform 0.1s ease-in-out, background 0.2s;
+  animation: ${fadeInUp} 0.9s forwards;
 
   &:active {
     transform: translateY(${rel(2)});
-    background: linear-gradient(to bottom, #5c2d91, #4e2678);
+    background: ${props => props.primary 
+      ? 'linear-gradient(to bottom, #5c2d91, #4e2678)' 
+      : 'linear-gradient(to bottom, #1a6275, #0d4e61)'};
+    box-shadow: 0 ${rel(2)} ${rel(4)} rgba(0, 0, 0, 0.3);
   }
 `
