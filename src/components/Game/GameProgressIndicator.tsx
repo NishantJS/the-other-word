@@ -3,6 +3,7 @@ import styled, { keyframes, css } from 'styled-components/macro'
 import { useAtomValue } from 'jotai'
 import { $game, $currentTurn, $round } from '../../state/$state'
 import { rel } from '../../style/rel'
+import { useTimerValue } from '../Timer/useTimerValue'
 
 const slideIn = keyframes`
   0% { transform: translateX(-${rel(100)}); opacity: 0; }
@@ -15,9 +16,10 @@ const pulse = keyframes`
   100% { transform: scale(1); }
 `
 
-const fillProgress = keyframes`
-  0% { width: 0%; }
-  100% { width: 100%; }
+const urgentPulse = keyframes`
+  0% { background-color: #ff5722; }
+  50% { background-color: #f44336; }
+  100% { background-color: #ff5722; }
 `
 
 export const GameProgressIndicator = memo(() => {
@@ -26,6 +28,11 @@ export const GameProgressIndicator = memo(() => {
   const round = useAtomValue($round)
   const [showProgress, setShowProgress] = useState(true)
   const [stableRound, setStableRound] = useState(0)
+  // Get timer value for current stage
+  const timerValue = useTimerValue({
+    startedAt: currentTurn?.timerStartedAt,
+    duration: 30 // Fixed duration for consistency
+  })
 
   // Stabilize the round counter to prevent infinite updates
   useEffect(() => {
@@ -35,7 +42,7 @@ export const GameProgressIndicator = memo(() => {
     }
   }, [game?.round, round, stableRound])
 
-  // Calculate progress more consistently using available game state properties
+  // Calculate progress using available game state properties
   const totalPlayers = game.players.filter(p => !p.isBot).length
   const progressPercentage = Math.min((stableRound / Math.max(totalPlayers, 1)) * 100, 100)
 
@@ -64,22 +71,23 @@ export const GameProgressIndicator = memo(() => {
   if (!currentTurn || !showProgress) return null
 
   return (
-    <ProgressContainer>
-      <ProgressHeader>
+    <ProgressContainer>      <ProgressHeader>
         <StageIndicator>
           <StageIcon>{getStageIcon(currentTurn.stage)}</StageIcon>
           <StageName>{getStageDisplayName(currentTurn.stage)}</StageName>
-        </StageIndicator>        <RoundCounter>
+          {timerValue !== null && (
+            <TimerDisplay urgent={timerValue < 10}>
+              {Math.ceil(Math.max(0, timerValue))}s
+            </TimerDisplay>
+          )}
+        </StageIndicator>
+        <RoundCounter>
           Round {stableRound + 1} of {totalPlayers}
         </RoundCounter>
       </ProgressHeader>
-      
-      <ProgressBarContainer>
+        <ProgressBarContainer>
         <ProgressBar>
-          <ProgressFill 
-            percentage={progressPercentage}
-            animated={currentTurn.stage === 'describing' || currentTurn.stage === 'voting'}
-          />
+          <ProgressFill percentage={progressPercentage} />
         </ProgressBar>
         <ProgressText>{Math.round(progressPercentage)}%</ProgressText>
       </ProgressBarContainer>
@@ -137,6 +145,22 @@ const StageName = styled.span`
   font-weight: bold;
 `
 
+const TimerDisplay = styled.span<{ urgent: boolean }>`
+  color: ${props => props.urgent ? '#ff5722' : '#4caf50'};
+  font-size: ${rel(12)};
+  font-weight: bold;
+  background: rgba(0, 0, 0, 0.4);
+  padding: ${rel(2)} ${rel(6)};
+  border-radius: ${rel(8)};
+  margin-left: ${rel(8)};
+  min-width: ${rel(28)};
+  text-align: center;
+  
+  ${props => props.urgent && css`
+    animation: ${urgentPulse} 1s infinite ease-in-out;
+  `}
+`
+
 const RoundCounter = styled.span`
   color: #ffcc00;
   font-size: ${rel(12)};
@@ -157,18 +181,12 @@ const ProgressBar = styled.div`
   overflow: hidden;
 `
 
-const ProgressFill = styled.div<{ percentage: number; animated: boolean }>`
+const ProgressFill = styled.div<{ percentage: number }>`
   height: 100%;
   width: ${props => props.percentage}%;
   background: linear-gradient(90deg, #4caf50, #8bc34a);
   border-radius: ${rel(3)};
   transition: width 0.5s ease-out;
-  
-  ${props => props.animated && css`
-    background: linear-gradient(90deg, #4caf50, #8bc34a, #4caf50);
-    background-size: 200% 100%;
-    animation: ${fillProgress} 2s infinite ease-in-out;
-  `}
 `
 
 const ProgressText = styled.span`

@@ -10,7 +10,7 @@ import { rel } from "../../style/rel"
 import { BotSpeech } from "./BotSpeech/BotSpeech"
 import { GameProgressIndicator } from "./GameProgressIndicator"
 import { FeedbackSystem, useNotification } from "./FeedbackSystem"
-import { StageTransition, QuickTip } from "./StageTransition"
+import { QuickTip } from "./StageTransition"
 import { AchievementSystem } from "./AchievementSystem"
 
 // Enhanced animations
@@ -113,22 +113,15 @@ export const Game = memo(() => {
   const currentTurn = useAtomValue($currentTurn)
   const game = useAtomValue($game)
   const [prevStage, setPrevStage] = useState<string | null>(null);
-  const [showTransition, setShowTransition] = useState(false);
   const [showTip, setShowTip] = useState(false);
   const [currentTip, setCurrentTip] = useState('');
   const [hasNotifiedForWord, setHasNotifiedForWord] = useState(false);
   const [lastNotifiedRound, setLastNotifiedRound] = useState(-1);
   const { notify, FeedbackComponent } = useNotification();
-  
-  // Detect stage changes for animations and transitions
+    // Detect stage changes for tips only (no blocking transitions)
   useEffect(() => {
     if (currentTurn?.stage && currentTurn.stage !== prevStage) {
       if (prevStage !== null) {
-        // Only show transition for major stage changes, not initial load
-        if (currentTurn.stage !== 'countdown') {
-          setShowTransition(true);
-        }
-        
         // Show helpful tips for each stage (but not on countdown)
         const tips = {
           'describing': 'Be clear but not too specific - you want teammates to understand without giving it away!',
@@ -141,9 +134,9 @@ export const Game = memo(() => {
           setTimeout(() => setShowTip(true), 500);
         }
         
-        // Show notifications for important events (limited)
+        // Show notifications for important events (limited and non-blocking)
         if (currentTurn.stage === 'voting' && prevStage === 'describing') {
-          notify.info('🔍 Time to Vote', 'Choose carefully - trust your instincts!');
+          notify.info('🔍 Time to Vote', 'Choose carefully!');
         }
       }
       setPrevStage(currentTurn.stage);
@@ -153,8 +146,7 @@ export const Game = memo(() => {
         setHasNotifiedForWord(false);
       }
     }
-  }, [currentTurn?.stage, prevStage, notify]);
-  // Show notification when player gets their word (only once per round)
+  }, [currentTurn?.stage, prevStage, notify]);// Show notification when player gets their word (only once per round, no impostor spoilers)
   useEffect(() => {
     const currentRound = game?.round ?? 0;
     
@@ -163,12 +155,8 @@ export const Game = memo(() => {
         !hasNotifiedForWord &&
         currentRound !== lastNotifiedRound) {
       
-      const isImpostor = yourPlayer.isImpostor;
-      if (isImpostor) {
-        notify.warning('🎭 You are the Impostor!', 'Try to blend in with the others');
-      } else {
-        notify.success('📝 You got your word!', 'Describe it clearly to your team');
-      }
+      // Don't reveal impostor status - maintain immersion
+      notify.success('📝 You got your word!', 'Describe it to your team');
       
       setHasNotifiedForWord(true);
       setLastNotifiedRound(currentRound);
@@ -176,7 +164,7 @@ export const Game = memo(() => {
   }, [yourPlayer?.secretWord, currentTurn?.stage, yourPlayer?.isImpostor, hasNotifiedForWord, lastNotifiedRound, game?.round, notify]);
 
   if (!currentTurn) return null
-    // Handle different stage types with a switch statement for better readability
+  // Handle different stage types with a switch statement for better readability
   let content = null;
   switch (currentTurn.stage) {
     case "countdown":
@@ -196,17 +184,7 @@ export const Game = memo(() => {
       content = <div>Unknown game stage</div>;
   }
 
-  // Determine the stage display name for the header
-  const stageDisplayName = (() => {
-    switch (currentTurn.stage) {
-      case "countdown": return "Get Ready";
-      case "describing": return "Describe";
-      case "voting": return "Find Impostor";
-      case "result": return "Results";
-      default: return "The Other Word";
-    }
-  })();
-    return (
+  return (
     <>
       <GlobalStyle />
       
@@ -214,26 +192,13 @@ export const Game = memo(() => {
       <GameProgressIndicator />
       <AchievementSystem />
       <FeedbackComponent />
-      
-      {/* Stage Transition Effect */}
-      <StageTransition 
-        stage={currentTurn.stage}
-        show={showTransition}
-        onTransitionComplete={() => setShowTransition(false)}
-      />
-      
-      {/* Quick Tips */}
+        {/* Quick Tips - Non-blocking */}
       <QuickTip 
         tip={currentTip}
         show={showTip}
         onDismiss={() => setShowTip(false)}
       />
-      
-      <Root isImpostor={yourPlayer?.isImpostor}>
-        <StageIndicator stageChanged={currentTurn.stage !== prevStage}>
-          <StageIcon stage={currentTurn.stage} />
-          <StageTitle>{stageDisplayName}</StageTitle>
-        </StageIndicator>
+        <Root isImpostor={yourPlayer?.isImpostor}>
         <GameContent>
           {yourPlayer && <WordDisplay 
             word={yourPlayer.secretWord} 
@@ -278,26 +243,6 @@ const Root = styled.div<{ isImpostor?: boolean }>`
     pointer-events: none;
     z-index: 0;
   }
-`
-
-const StageIndicator = styled.div<{ stageChanged: boolean }>`
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin: ${rel(12)} 0 ${rel(16)};
-  animation: ${props => props.stageChanged ? css`${fadeIn} 0.4s ease-out` : 'none'};
-`
-
-const StageTitle = styled.h1`
-  color: white;
-  font-size: ${rel(22)};
-  font-weight: bold;
-  margin: 0;
-  text-align: center;
-  text-shadow: 0 ${rel(2)} ${rel(4)} rgba(0, 0, 0, 0.4);
-  letter-spacing: ${rel(1)};
 `
 
 const GameContent = styled.div`
