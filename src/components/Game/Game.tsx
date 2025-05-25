@@ -8,6 +8,10 @@ import { ImpostorResultsNew } from "./Results/ImpostorResultsNew"
 import { memo, useEffect, useState } from "react"
 import { rel } from "../../style/rel"
 import { BotSpeech } from "./BotSpeech/BotSpeech"
+import { GameProgressIndicator } from "./GameProgressIndicator"
+import { FeedbackSystem, useNotification } from "./FeedbackSystem"
+import { StageTransition, QuickTip } from "./StageTransition"
+import { AchievementSystem } from "./AchievementSystem"
 
 // Enhanced animations
 const fadeIn = keyframes`
@@ -109,13 +113,67 @@ export const Game = memo(() => {
   const currentTurn = useAtomValue($currentTurn)
   const game = useAtomValue($game)
   const [prevStage, setPrevStage] = useState<string | null>(null);
+  const [showTransition, setShowTransition] = useState(false);
+  const [showTip, setShowTip] = useState(false);
+  const [currentTip, setCurrentTip] = useState('');
+  const [hasNotifiedForWord, setHasNotifiedForWord] = useState(false);
+  const [lastNotifiedRound, setLastNotifiedRound] = useState(-1);
+  const { notify, FeedbackComponent } = useNotification();
   
-  // Detect stage changes for animations
+  // Detect stage changes for animations and transitions
   useEffect(() => {
     if (currentTurn?.stage && currentTurn.stage !== prevStage) {
+      if (prevStage !== null) {
+        // Only show transition for major stage changes, not initial load
+        if (currentTurn.stage !== 'countdown') {
+          setShowTransition(true);
+        }
+        
+        // Show helpful tips for each stage (but not on countdown)
+        const tips = {
+          'describing': 'Be clear but not too specific - you want teammates to understand without giving it away!',
+          'voting': 'Look for inconsistencies in descriptions - who seemed unsure or vague?',
+          'result': 'Learn from each round to become a better detective!'
+        };
+        
+        if (tips[currentTurn.stage as keyof typeof tips]) {
+          setCurrentTip(tips[currentTurn.stage as keyof typeof tips]);
+          setTimeout(() => setShowTip(true), 500);
+        }
+        
+        // Show notifications for important events (limited)
+        if (currentTurn.stage === 'voting' && prevStage === 'describing') {
+          notify.info('🔍 Time to Vote', 'Choose carefully - trust your instincts!');
+        }
+      }
       setPrevStage(currentTurn.stage);
+      
+      // Reset word notification flag when stage changes to countdown (new round)
+      if (currentTurn.stage === 'countdown') {
+        setHasNotifiedForWord(false);
+      }
     }
-  }, [currentTurn?.stage, prevStage]);
+  }, [currentTurn?.stage, prevStage, notify]);
+  // Show notification when player gets their word (only once per round)
+  useEffect(() => {
+    const currentRound = game?.round ?? 0;
+    
+    if (yourPlayer?.secretWord && 
+        currentTurn?.stage === 'countdown' && 
+        !hasNotifiedForWord &&
+        currentRound !== lastNotifiedRound) {
+      
+      const isImpostor = yourPlayer.isImpostor;
+      if (isImpostor) {
+        notify.warning('🎭 You are the Impostor!', 'Try to blend in with the others');
+      } else {
+        notify.success('📝 You got your word!', 'Describe it clearly to your team');
+      }
+      
+      setHasNotifiedForWord(true);
+      setLastNotifiedRound(currentRound);
+    }
+  }, [yourPlayer?.secretWord, currentTurn?.stage, yourPlayer?.isImpostor, hasNotifiedForWord, lastNotifiedRound, game?.round, notify]);
 
   if (!currentTurn) return null
     // Handle different stage types with a switch statement for better readability
@@ -148,10 +206,29 @@ export const Game = memo(() => {
       default: return "The Other Word";
     }
   })();
-  
-  return (
+    return (
     <>
       <GlobalStyle />
+      
+      {/* Enhanced UI Components */}
+      <GameProgressIndicator />
+      <AchievementSystem />
+      <FeedbackComponent />
+      
+      {/* Stage Transition Effect */}
+      <StageTransition 
+        stage={currentTurn.stage}
+        show={showTransition}
+        onTransitionComplete={() => setShowTransition(false)}
+      />
+      
+      {/* Quick Tips */}
+      <QuickTip 
+        tip={currentTip}
+        show={showTip}
+        onDismiss={() => setShowTip(false)}
+      />
+      
       <Root isImpostor={yourPlayer?.isImpostor}>
         <StageIndicator stageChanged={currentTurn.stage !== prevStage}>
           <StageIcon stage={currentTurn.stage} />

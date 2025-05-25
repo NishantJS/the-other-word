@@ -1,12 +1,30 @@
 import { useAtomValue } from "jotai"
 import { $yourPlayer, $currentTurn, $round, $playersInfo, $game } from "../../../state/$state"
-import styled, { css } from "styled-components/macro"
+import styled, { css, keyframes } from "styled-components/macro"
 import { rel } from "../../../style/rel"
 import { memo, useState, useEffect, useRef } from "react"
 import { votingDuration } from "../../../logic"
 import { LineTimer } from "../../Timer/LineTimer"
 import { sounds } from "../../../sounds/sounds"
 import { SpeechRecognition } from "../SpeechRecognition/SpeechRecognition"
+
+// Enhanced animations
+const bounceIn = keyframes`
+  0% { transform: scale(0.9); opacity: 0; }
+  50% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+`
+
+const selectPulse = keyframes`
+  0% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+  100% { transform: scale(1); }
+`
+
+const progressBar = keyframes`
+  0% { width: 0%; }
+  100% { width: 100%; }
+`
 
 // Countdown timer component to show remaining time
 const CountdownTimer = memo(({
@@ -42,11 +60,13 @@ const CountdownTimer = memo(({
 export const Voting = memo(() => {
   const yourPlayer = useAtomValue($yourPlayer)
   const currentTurn = useAtomValue($currentTurn)
-  const round = useAtomValue($round)
+  const round = useAtomValue($round);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
   const [hasVoted, setHasVoted] = useState(false)
   const [autoVoted, setAutoVoted] = useState(false)
   const [timeRemaining, setTimeRemaining] = useState(votingDuration)
+  const [showConfidenceBoost, setShowConfidenceBoost] = useState(false)
+  const [selectionConfirmed, setSelectionConfirmed] = useState(false)
 
   // Use a ref to store the currently selected player ID
   // This will be accessible even when the component is about to unmount
@@ -126,7 +146,6 @@ export const Voting = memo(() => {
       }
     };
   }, [currentTurn, hasVoted, round]);
-
   const handleVote = () => {
     if (!selectedPlayerId || hasVoted) return
 
@@ -136,11 +155,14 @@ export const Voting = memo(() => {
       round
     })
 
-    // Play sound
+    // Enhanced feedback
     sounds.guessButton.play()
-
-    // Update local state
     setHasVoted(true)
+    setSelectionConfirmed(true)
+    setShowConfidenceBoost(true)
+    
+    // Show confidence boost animation
+    setTimeout(() => setShowConfidenceBoost(false), 2000)
   }
 
   // Handle timer expiration - auto-submit the current selection
@@ -241,15 +263,22 @@ export const Voting = memo(() => {
             </PlayerInfo>
           </PlayerItem>
         ))}
-      </PlayerList>
-
-      {!hasVoted && (
-        <VoteButton
-          disabled={!selectedPlayerId}
-          onClick={handleVote}
-        >
-          Lock in Vote
-        </VoteButton>
+      </PlayerList>      {!hasVoted && (
+        <>
+          <VoteButton
+            disabled={!selectedPlayerId}
+            onClick={handleVote}
+            confirmed={selectionConfirmed}
+          >
+            {selectedPlayerId ? '🔒 Lock in Vote' : '👆 Select a Player'}
+          </VoteButton>
+          
+          {showConfidenceBoost && (
+            <ConfidenceBoost>
+              🎯 Good choice! Trust your instincts!
+            </ConfidenceBoost>
+          )}
+        </>
       )}
 
       {hasVoted && (
@@ -319,6 +348,14 @@ const PlayerList = styled.div`
   margin-bottom: ${rel(24)};
   overflow-y: auto;
   max-height: ${rel(300)};
+  
+  /* Hide scrollbar while keeping scroll functionality */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+  
+  &::-webkit-scrollbar {
+    display: none; /* Safari and Chrome */
+  }
 `
 
 const PlayerItem = styled.div<{ selected: boolean; disabled: boolean }>`
@@ -405,8 +442,11 @@ const SpeakingStatus = styled.div`
   align-items: center;
 `
 
-const VoteButton = styled.button<{ disabled: boolean }>`
-  background: ${({ disabled }) => (disabled ? "#666" : "#d32f2f")};
+const VoteButton = styled.button<{ disabled: boolean; confirmed?: boolean }>`
+  background: ${({ disabled, confirmed }) => 
+    disabled ? "#666" : 
+    confirmed ? "#4caf50" : "#d32f2f"
+  };
   color: white;
   font-size: ${rel(20)};
   padding: ${rel(12)} ${rel(24)};
@@ -415,20 +455,29 @@ const VoteButton = styled.button<{ disabled: boolean }>`
   margin-top: ${rel(16)};
   cursor: ${({ disabled }) => (disabled ? "default" : "pointer")};
   opacity: ${({ disabled }) => (disabled ? 0.7 : 1)};
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   box-shadow: 0 ${rel(4)} ${rel(8)} rgba(0, 0, 0, 0.3);
+  position: relative;
+  overflow: hidden;
+  animation: ${({ confirmed }) => confirmed ? css`${bounceIn} 0.6s ease-out` : 'none'};
 
   &:hover {
     ${({ disabled }) => !disabled && css`
       background: #f44336;
+      transform: translateY(-${rel(2)});
+      box-shadow: 0 ${rel(6)} ${rel(12)} rgba(0, 0, 0, 0.4);
     `}
   }
 
   &:active {
     ${({ disabled }) => !disabled && css`
-      transform: translateY(${rel(2)});
-      box-shadow: 0 ${rel(2)} ${rel(4)} rgba(0, 0, 0, 0.3);
+      transform: translateY(${rel(1)});
+      box-shadow: 0 ${rel(2)} ${rel(6)} rgba(0, 0, 0, 0.3);
     `}
+  }
+  
+  &:not(:disabled) {
+    animation: ${selectPulse} 2s infinite ease-in-out;
   }
 `
 
@@ -467,4 +516,20 @@ const AutoVoteText = styled.div`
   color: #ffcc00;
   margin-top: ${rel(4)};
   font-style: italic;
+`
+
+const ConfidenceBoost = styled.div`
+  position: absolute;
+  bottom: ${rel(100)};
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #4caf50, #8bc34a);
+  color: white;
+  font-size: ${rel(16)};
+  font-weight: bold;
+  padding: ${rel(8)} ${rel(16)};
+  border-radius: ${rel(20)};
+  animation: ${bounceIn} 0.6s ease-out;
+  box-shadow: 0 ${rel(4)} ${rel(12)} rgba(76, 175, 80, 0.4);
+  z-index: 100;
 `

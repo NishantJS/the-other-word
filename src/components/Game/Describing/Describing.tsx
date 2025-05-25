@@ -178,17 +178,7 @@ const SpectatingView = memo(() => {
         </PlayerName>
         {describingPlayer.isBot && <BotBadge>🤖</BotBadge>}
       </SpeakerDisplay>
-      
-      {/* Concise instructions */}
-      <CompactInstructions>
-        <Instruction>Listen carefully for inconsistencies</Instruction>
-        <Instruction>Can you identify the impostor?</Instruction>
-      </CompactInstructions>
-      
-      {/* Emote selector for reactions */}
-      <EmoteSelector />
-      
-      {/* Concise instructions */}
+        {/* Concise instructions */}
       <CompactInstructions>
         <Instruction>Listen carefully for inconsistencies</Instruction>
         <Instruction>Can you identify the impostor?</Instruction>
@@ -271,17 +261,43 @@ const ContentArea = styled.div`
 `
 
 const SecretWord = styled.div`
-  font-size: ${rel(36)};
+  font-size: ${rel(42)};
   font-weight: bold;
   color: #fff;
-  background: linear-gradient(135deg, #7931c7, #5c2d91);
-  padding: ${rel(12)} ${rel(24)};
-  border-radius: ${rel(12)};
-  box-shadow: 0 ${rel(4)} ${rel(8)} rgba(0, 0, 0, 0.25);
+  background: linear-gradient(135deg, #7931c7, #5c2d91, #9c27b0);
+  background-size: 200% 200%;
+  animation: ${popIn} 0.5s ease-out, gradient-shift 3s ease-in-out infinite;
+  padding: ${rel(16)} ${rel(32)};
+  border-radius: ${rel(16)};
+  box-shadow: 0 ${rel(8)} ${rel(24)} rgba(121, 49, 199, 0.4);
   text-transform: uppercase;
-  animation: ${popIn} 0.5s ease-out;
+  text-align: center;
   margin-top: ${rel(40)};
-  border: ${rel(2)} solid rgba(255, 255, 255, 0.2);
+  border: ${rel(2)} solid rgba(255, 255, 255, 0.3);
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    animation: shine 2s infinite;
+  }
+
+  @keyframes gradient-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  
+  @keyframes shine {
+    0% { left: -100%; }
+    100% { left: 100%; }
+  }
 `
 
 const CompactInstructions = styled.div`
@@ -301,21 +317,44 @@ const Instruction = styled.p`
 `
 
 const FinishButton = styled.button`
-  background: linear-gradient(to bottom, #6ab800, #5bb600);
+  background: linear-gradient(145deg, #4caf50, #45a049, #3d8b40);
+  background-size: 200% 200%;
   color: white;
-  font-size: ${rel(22)};
-  padding: ${rel(10)} ${rel(20)};
-  border-radius: ${rel(12)};
+  font-size: ${rel(24)};
+  font-weight: bold;
+  padding: ${rel(14)} ${rel(28)};
+  border-radius: ${rel(16)};
   border: none;
-  box-shadow: 0 ${rel(4)} ${rel(8)} rgba(0, 0, 0, 0.25);
+  box-shadow: 0 ${rel(6)} ${rel(16)} rgba(76, 175, 80, 0.4);
   cursor: pointer;
-  margin-top: ${rel(20)};
-  transition: all 0.2s ease;
+  margin-top: ${rel(24)};
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  text-transform: uppercase;
+  letter-spacing: ${rel(1)};
+
+  &:hover {
+    transform: translateY(-${rel(2)});
+    box-shadow: 0 ${rel(8)} ${rel(20)} rgba(76, 175, 80, 0.6);
+    background-position: 100% 100%;
+  }
 
   &:active {
-    transform: translateY(${rel(2)});
-    box-shadow: 0 ${rel(2)} ${rel(4)} rgba(0, 0, 0, 0.25);
-    background: linear-gradient(to bottom, #5bb600, #4aa500);
+    transform: translateY(${rel(1)});
+    box-shadow: 0 ${rel(4)} ${rel(12)} rgba(76, 175, 80, 0.4);
+  }
+  
+  &::before {
+    content: '✓';
+    position: absolute;
+    left: ${rel(12)};
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  &:hover::before {
+    opacity: 1;
   }
 `
 
