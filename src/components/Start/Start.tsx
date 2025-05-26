@@ -1,17 +1,17 @@
 import { useAtomValue } from "jotai"
 import { $players, $yourPlayer, $game } from "../../state/$state"
-import { useMemo, memo, useState } from "react"
+import { useMemo, memo } from "react"
 import styled from "styled-components/macro"
 
 import logo from "./new-logo.svg"
 import { rel } from "../../style/rel"
-import { AISettings } from "../Settings/AISettings"
+
 
 export const Start = memo(() => {
   const players = useAtomValue($players)
   const yourPlayer = useAtomValue($yourPlayer)
   const game = useAtomValue($game)
-  const [showSettings, setShowSettings] = useState(false)
+
 
   const numReady = useMemo(
     () => players.filter((p) => p.readyToStart).length,
@@ -36,7 +36,7 @@ export const Start = memo(() => {
         <LogoImg src={logo} />
         <GameTitle>THE OTHER WORD</GameTitle>
       </LogoContainer>
-      
+
       <ContentContainer>
         <PlayerCounter>
           <PlayerCountValue>{numReady}/{players.length}</PlayerCountValue>
@@ -54,7 +54,7 @@ export const Start = memo(() => {
           {/* Bot toggle button for 3-5 players */}
           {showBotToggle && (
             <ToggleContainer>
-              <ToggleLabel>Bots</ToggleLabel>              <ToggleSwitch 
+              <ToggleLabel>Bots</ToggleLabel>              <ToggleSwitch
                 active={game.useBots}
                 onClick={() => Rune.actions.toggleBots()}
               >
@@ -72,21 +72,15 @@ export const Start = memo(() => {
               <InfoText>{game.botCount} bot{game.botCount > 1 ? 's' : ''} will join the game</InfoText>
             </InfoCard>
           )}
-
-          <SettingsButton onClick={() => setShowSettings(!showSettings)}>
-            {showSettings ? "Hide Settings" : "Game Settings"}
-          </SettingsButton>
-          
-          {showSettings && <AISettings />}
         </OptionsContainer>
 
         <ReadyButton
           disabled={yourPlayer && yourPlayer.readyToStart}
           onClick={() => Rune.actions.setReadyToStart()}
         >
-          {yourPlayer && yourPlayer.readyToStart ? "Waiting for others..." : "I'm Ready"}
-        </ReadyButton>
+          {yourPlayer && yourPlayer.readyToStart ? "Waiting for others..." : "I'm Ready"}        </ReadyButton>
       </ContentContainer>
+
     </Root>
   )
 })
@@ -102,7 +96,7 @@ const Root = styled.div`
   background: linear-gradient(180deg, #5f3dc4 0%, #462297 50%, #311b92 100%);
   position: relative;
   height: 100%;
-  
+
   &::before {
     content: '';
     position: absolute;
@@ -115,7 +109,7 @@ const Root = styled.div`
     pointer-events: none;
     z-index: 0;
   }
-  
+
   > * {
     position: relative;
     z-index: 1;
@@ -183,9 +177,9 @@ const InfoCard = styled.div<{ warning?: boolean; success?: boolean }>`
   font-size: ${rel(16)};
   text-align: center;
   color: ${props => props.warning ? '#212121' : 'white'};
-  background-color: ${props => 
-    props.warning ? 'rgba(255, 193, 7, 0.9)' : 
-    props.success ? 'rgba(76, 175, 80, 0.8)' : 
+  background-color: ${props =>
+    props.warning ? 'rgba(255, 193, 7, 0.9)' :
+    props.success ? 'rgba(76, 175, 80, 0.8)' :
     'rgba(255, 255, 255, 0.15)'};
   padding: ${rel(12)} ${rel(16)};
   border-radius: ${rel(8)};
@@ -251,36 +245,13 @@ const ToggleSwitchLabel = styled.div`
   margin-left: ${rel(8)};
 `
 
-const SettingsButton = styled.button`
-  font-size: ${rel(16)};
-  color: white;
-  background-color: rgba(255, 255, 255, 0.15);
-  padding: ${rel(12)} ${rel(16)};
-  border: none;
-  border-radius: ${rel(8)};
-  cursor: pointer;
-  text-align: center;
-  width: 100%;
-  font-weight: 500;
-  backdrop-filter: blur(5px);
-  box-shadow: 0 ${rel(2)} ${rel(8)} rgba(0, 0, 0, 0.2);
-  transition: background-color 150ms ease-out;
 
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.25);
-  }
-  
-  &:active {
-    transform: translateY(${rel(1)});
-    box-shadow: 0 ${rel(1)} ${rel(4)} rgba(0, 0, 0, 0.2);
-  }
-`
 
 export const ReadyButton = styled.button<{ disabled?: boolean }>`
   width: 85%;
   max-width: ${rel(336)};
-  background: ${props => props.disabled ? 
-    'linear-gradient(180deg, #5e35b1 0%, #4527a0 100%)' : 
+  background: ${props => props.disabled ?
+    'linear-gradient(180deg, #5e35b1 0%, #4527a0 100%)' :
     'linear-gradient(180deg, #8e24aa 0%, #6a1b9a 100%)'};
   border: none;
   border-radius: ${rel(12)};
@@ -291,24 +262,24 @@ export const ReadyButton = styled.button<{ disabled?: boolean }>`
   text-align: center;
   cursor: ${props => props.disabled ? 'default' : 'pointer'};
   opacity: ${props => props.disabled ? 0.7 : 1};
-  box-shadow: ${props => props.disabled ? 
-    'none' : 
+  box-shadow: ${props => props.disabled ?
+    'none' :
     `0 ${rel(4)} ${rel(12)} rgba(0, 0, 0, 0.3)`};
   transition: all 150ms ease-out;
   text-transform: uppercase;
   letter-spacing: ${rel(1)};
 
   &:hover {
-    background: ${props => props.disabled ? 
-      'linear-gradient(180deg, #5e35b1 0%, #4527a0 100%)' : 
+    background: ${props => props.disabled ?
+      'linear-gradient(180deg, #5e35b1 0%, #4527a0 100%)' :
       'linear-gradient(180deg, #9c27b0 0%, #7b1fa2 100%)'};
     transform: ${props => props.disabled ? 'none' : `translateY(${rel(-2)})`};
   }
 
   &:active {
     transform: ${props => props.disabled ? 'none' : `translateY(${rel(1)})`};
-    box-shadow: ${props => props.disabled ? 
-      'none' : 
+    box-shadow: ${props => props.disabled ?
+      'none' :
       `0 ${rel(2)} ${rel(4)} rgba(0, 0, 0, 0.3)`};
   }
 `

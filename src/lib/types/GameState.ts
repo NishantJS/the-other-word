@@ -77,9 +77,6 @@ export interface BotPlayer {
   name: string
   avatarUrl: string
   description: string  // Pre-recorded description for the bot
-  aiDescription?: string // AI-generated description
-  voicePitch?: number // Voice pitch for speech synthesis
-  voiceRate?: number // Voice rate for speech synthesis
 }
 
 export interface GameState {
@@ -105,19 +102,6 @@ export interface GameState {
   useBots: boolean       // Whether to use bots in the game
   botCount: number       // Number of bots to add to the game
   bots: BotPlayer[]      // List of available bot players
-  useAI: boolean         // Whether to use AI features
-  useSpeech: boolean     // Whether to use speech synthesis and recognition
-  aiAnalysis?: {         // AI analysis of player descriptions
-    playerId: PlayerId
-    rating: number       // 1-10 rating of how likely the player is the impostor
-    explanation: string  // Explanation of the rating
-  }
-  pendingAIRequests?: Record<string, {
-    botId?: PlayerId
-    impostorAnalysis?: {
-      playerId: PlayerId
-    }
-  }>
   gameStarted: boolean
   round: number
   currentWord: string    // The main word for the current round

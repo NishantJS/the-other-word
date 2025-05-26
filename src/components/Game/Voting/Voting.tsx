@@ -6,7 +6,7 @@ import { memo, useState, useEffect, useRef } from "react"
 import { votingDuration } from "../../../logic"
 import { LineTimer } from "../../Timer/LineTimer"
 import { sounds } from "../../../sounds/sounds"
-import { SpeechRecognition } from "../SpeechRecognition/SpeechRecognition"
+
 
 // Enhanced animations
 const bounceIn = keyframes`
@@ -21,10 +21,7 @@ const selectPulse = keyframes`
   100% { transform: scale(1); }
 `
 
-const progressBar = keyframes`
-  0% { width: 0%; }
-  100% { width: 100%; }
-`
+
 
 // Countdown timer component to show remaining time
 const CountdownTimer = memo(({
@@ -64,7 +61,7 @@ export const Voting = memo(() => {
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
   const [hasVoted, setHasVoted] = useState(false)
   const [autoVoted, setAutoVoted] = useState(false)
-  const [timeRemaining, setTimeRemaining] = useState(votingDuration)
+
   const [showConfidenceBoost, setShowConfidenceBoost] = useState(false)
   const [selectionConfirmed, setSelectionConfirmed] = useState(false)
 
@@ -99,7 +96,7 @@ export const Voting = memo(() => {
       const elapsed = currentTime - (currentTurn.timerStartedAt || 0);
       const remaining = Math.max(0, votingDuration - elapsed);
 
-      setTimeRemaining(remaining);
+
 
       // Auto-submit vote 1 second before timer expires if player has selected but not voted
       if (remaining <= 1 && selectedPlayerIdRef.current && !hasVoted) {
@@ -117,9 +114,8 @@ export const Voting = memo(() => {
           setHasVoted(true);
           setAutoVoted(true);
 
-          console.log("Time's almost up! Your vote was automatically submitted.");
         } catch (error) {
-          console.error("Failed to auto-submit vote:", error);
+          // Handle auto-submit errors silently
         }
 
         clearInterval(interval);
@@ -139,9 +135,8 @@ export const Voting = memo(() => {
             suspectId: selectedPlayerIdRef.current,
             round
           });
-          console.log("Component unmounting - final vote submission");
         } catch (error) {
-          console.error("Failed to submit vote on unmount:", error);
+          // Handle unmount vote submission errors silently
         }
       }
     };
@@ -160,7 +155,7 @@ export const Voting = memo(() => {
     setHasVoted(true)
     setSelectionConfirmed(true)
     setShowConfidenceBoost(true)
-    
+
     // Show confidence boost animation
     setTimeout(() => setShowConfidenceBoost(false), 2000)
   }
@@ -182,10 +177,8 @@ export const Voting = memo(() => {
         setHasVoted(true);
         setAutoVoted(true);
 
-        // Show a notification that the vote was automatically submitted
-        console.log("Time's up! Your vote was automatically submitted.");
       } catch (error) {
-        console.error("Failed to auto-submit vote in handleTimeUp:", error);
+        // Handle timer expiration vote submission errors silently
       }
     }
   }
@@ -272,7 +265,7 @@ export const Voting = memo(() => {
           >
             {selectedPlayerId ? '🔒 Lock in Vote' : '👆 Select a Player'}
           </VoteButton>
-          
+
           {showConfidenceBoost && (
             <ConfidenceBoost>
               🎯 Good choice! Trust your instincts!
@@ -303,8 +296,7 @@ export const Voting = memo(() => {
         </>
       )}
 
-      {/* Add speech recognition component */}
-      <SpeechRecognition />
+
     </Root>
   )
 })
@@ -348,11 +340,11 @@ const PlayerList = styled.div`
   margin-bottom: ${rel(24)};
   overflow-y: auto;
   max-height: ${rel(300)};
-  
+
   /* Hide scrollbar while keeping scroll functionality */
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* Internet Explorer 10+ */
-  
+
   &::-webkit-scrollbar {
     display: none; /* Safari and Chrome */
   }
@@ -443,8 +435,8 @@ const SpeakingStatus = styled.div`
 `
 
 const VoteButton = styled.button<{ disabled: boolean; confirmed?: boolean }>`
-  background: ${({ disabled, confirmed }) => 
-    disabled ? "#666" : 
+  background: ${({ disabled, confirmed }) =>
+    disabled ? "#666" :
     confirmed ? "#4caf50" : "#d32f2f"
   };
   color: white;
@@ -475,7 +467,7 @@ const VoteButton = styled.button<{ disabled: boolean; confirmed?: boolean }>`
       box-shadow: 0 ${rel(2)} ${rel(6)} rgba(0, 0, 0, 0.3);
     `}
   }
-  
+
   &:not(:disabled) {
     animation: ${selectPulse} 2s infinite ease-in-out;
   }

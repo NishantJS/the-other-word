@@ -1,6 +1,6 @@
 import { GameState } from "./types/GameState"
 import { createBot } from "./bots"
-import { generateBotDescription } from "./ai"
+
 
 export function startGameCheck(game: GameState) {
   if (game.gameStarted) return

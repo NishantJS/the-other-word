@@ -1,8 +1,7 @@
 import { similarWordPairs, GameState } from "./lib/types/GameState"
 import { startGameCheck } from "./lib/startGameCheck"
 import { PlayerId } from "rune-sdk/multiplayer"
-import { getBotVote, isBot } from "./lib/bots"
-import { generateBotDescription, handleAIResponse } from "./lib/ai"
+import { getBotVote } from "./lib/bots"
 
 // Game constants
 export const numRounds = 3
@@ -118,29 +117,6 @@ function startNewRound(game: GameState): void {
   // Clear votes and reactions from previous rounds
   game.votes = []
   game.reactions = []
-
-  // If AI is enabled, prepare AI descriptions for bot players
-  if (game.useAI) {
-    // Clear previous AI descriptions
-    for (const bot of game.bots) {
-      bot.aiDescription = undefined
-    }
-
-    // Generate AI descriptions for the first bot that will speak
-    const botPlayers = game.players.filter(p => p.isBot)
-    if (botPlayers.length > 0) {
-      // Find the first bot in the speaking order
-      const firstBotIndex = game.currentTurn.descriptionOrder.findIndex(id =>
-        botPlayers.some(bot => bot.id === id)
-      )
-
-      if (firstBotIndex !== -1) {
-        const firstBotId = game.currentTurn.descriptionOrder[firstBotIndex]
-        // Generate description for the first bot
-        handleBotDescription(game, firstBotId)
-      }
-    }
-  }
 }
 
 // Helper function to check if the impostor was caught
@@ -170,10 +146,18 @@ function checkImpostorCaught(game: GameState): boolean {
     }
   })
 
-  // Check if the most voted player is the impostor
-  if (mostVotedPlayerId) {
-    const mostVotedPlayer = game.players.find((p) => p.id === mostVotedPlayerId)
-    return mostVotedPlayer?.isImpostor || false
+  // Only consider impostor caught if:
+  // 1. Someone actually got votes (maxVotes > 0)
+  // 2. The most voted player is the impostor
+  // 3. They got at least half the total votes (majority rule)
+  if (mostVotedPlayerId && maxVotes > 0) {
+    const totalVotes = currentRoundVotes.length
+    const majorityThreshold = Math.ceil(totalVotes / 2)
+
+    if (maxVotes >= majorityThreshold) {
+      const mostVotedPlayer = game.players.find((p) => p.id === mostVotedPlayerId)
+      return mostVotedPlayer?.isImpostor || false
+    }
   }
 
   return false
@@ -229,6 +213,100 @@ function updatePersistedScores(game: any): void {
   }
 }
 
+// Helper function to complete voting and transition to result stage
+// This centralizes the voting completion logic to prevent state desync
+function completeVoting(game: GameState): void {
+  // Safety check
+  if (!game.currentTurn) return;
+
+  // Prevent duplicate calls
+  if (game.currentTurn.votingComplete) return;
+
+  game.currentTurn.votingComplete = true;
+
+  // Check if the impostor was caught
+  game.currentTurn.impostorCaught = checkImpostorCaught(game);
+
+  // Move to results stage
+  game.currentTurn.stage = "result";
+  game.currentTurn.timerStartedAt = Rune.gameTime() / 1000;
+
+  // Find the impostor
+  const impostor = game.players.find(p => p.isImpostor);
+  if (!impostor) return; // Safety check
+
+  // Award points to players who correctly guessed the impostor
+  const currentRoundVotes = game.votes.filter(vote => vote.round === game.round);
+  currentRoundVotes.forEach(vote => {
+    if (vote.suspectId === impostor.id) {
+      // This player correctly identified the impostor
+      const voter = game.players.find(p => p.id === vote.voterId);
+      if (voter && !voter.isImpostor) {
+        voter.score.nonImpostor += correctGuessPoints;
+        voter.score.guessing += correctGuessPoints; // For backward compatibility
+        voter.latestScore += correctGuessPoints;
+        // For backward compatibility with Results.tsx
+        if (!voter.latestRoundScore) {
+          voter.latestRoundScore = { acting: 0, guessing: 0 };
+        }
+        voter.latestRoundScore.guessing += correctGuessPoints;
+      }
+    }
+  });
+
+  // Award points if impostor was caught
+  if (game.currentTurn.impostorCaught) {
+    // Non-impostors get points for catching the impostor
+    game.players.forEach(player => {
+      if (!player.isImpostor) {
+        player.score.nonImpostor += nonImpostorCatchPoints;
+        player.score.guessing += nonImpostorCatchPoints; // For backward compatibility
+        player.latestScore += nonImpostorCatchPoints;
+        // For backward compatibility with Results.tsx
+        if (!player.latestRoundScore) {
+          player.latestRoundScore = { acting: 0, guessing: 0 };
+        }
+        player.latestRoundScore.guessing += nonImpostorCatchPoints;
+      }
+    });
+
+    // Update persisted scores
+    updatePersistedScores(game);
+
+    // Game ends when impostor is caught
+    game.gameOver = true;
+    game.winningTeam = "nonImpostors";
+
+    // Report game over to Rune
+    reportGameOver(game);
+  } else {
+    // If impostor wasn't caught, check if only 2 players remain
+    if (game.players.length <= 2) {
+      // Impostor wins if only 2 players remain
+      const impostor = game.players.find(p => p.isImpostor);
+      if (impostor) {
+        impostor.score.impostor += impostorSurvivePoints;
+        impostor.score.acting += impostorSurvivePoints; // For backward compatibility
+        impostor.latestScore = impostorSurvivePoints;
+        // For backward compatibility with Results.tsx
+        impostor.latestRoundScore = {
+          acting: impostorSurvivePoints,
+          guessing: 0
+        };
+
+        // Update persisted scores
+        updatePersistedScores(game);
+
+        game.gameOver = true;
+        game.winningTeam = "impostor";
+
+        // Report game over to Rune
+        reportGameOver(game);
+      }
+    }
+  }
+}
+
 // Helper function to report game over to Rune in a consistent way
 function reportGameOver(game: GameState): void {
   if (!game.gameOver) return
@@ -266,20 +344,31 @@ function moveToNextDescriber(game: GameState): void {
   if (!currentDescriberId) return
 
   const currentIndex = game.currentTurn.descriptionOrder.indexOf(currentDescriberId)
+  if (currentIndex === -1) return // Safety check
 
   // Initialize completedDescribers array if it doesn't exist
   if (!game.currentTurn.completedDescribers) {
     game.currentTurn.completedDescribers = []
   }
 
-  // Add current describer to completed list
-  game.currentTurn.completedDescribers.push(currentDescriberId)
+  // Add current describer to completed list (avoid duplicates)
+  if (!game.currentTurn.completedDescribers.includes(currentDescriberId)) {
+    game.currentTurn.completedDescribers.push(currentDescriberId)
+  }
 
-  // If we've gone through all players, move to voting stage
-  if (currentIndex === game.currentTurn.descriptionOrder.length - 1) {
+  // Update the current describer's state
+  const currentDescriber = game.players.find((p) => p.id === currentDescriberId)
+  if (currentDescriber) {
+    currentDescriber.describing = false
+  }
+
+  // Check if we've completed all players in the description order
+  if (game.currentTurn.completedDescribers.length >= game.currentTurn.descriptionOrder.length) {
+    // All players have described, move to voting stage
     game.currentTurn.stage = "voting"
     game.currentTurn.timerStartedAt = Rune.gameTime() / 1000
     game.currentTurn.previousDescriberId = currentDescriberId
+    game.currentTurn.currentDescriberId = null
     game.currentTurn.nextDescriberId = null
 
     // Clear reactions when moving to voting stage
@@ -291,29 +380,47 @@ function moveToNextDescriber(game: GameState): void {
     return
   }
 
-  // Otherwise, move to the next player
-  const nextIndex = currentIndex + 1
-  const nextPlayerId = game.currentTurn.descriptionOrder[nextIndex]
-
-  // Update the current describer
-  const currentDescriber = game.players.find((p) => p.id === currentDescriberId)
-  if (currentDescriber) {
-    currentDescriber.describing = false
+  // Find the next player who hasn't described yet
+  let nextPlayerId: PlayerId | null = null
+  for (let i = currentIndex + 1; i < game.currentTurn.descriptionOrder.length; i++) {
+    const candidateId = game.currentTurn.descriptionOrder[i]
+    if (!game.currentTurn.completedDescribers.includes(candidateId)) {
+      nextPlayerId = candidateId
+      break
+    }
   }
 
+  // If no next player found in remaining order, find first incomplete player from start
+  if (!nextPlayerId) {
+    for (const candidateId of game.currentTurn.descriptionOrder) {
+      if (!game.currentTurn.completedDescribers.includes(candidateId)) {
+        nextPlayerId = candidateId
+        break
+      }
+    }
+  }
+
+  // If still no next player, move to voting (all done)
+  if (!nextPlayerId) {
+    game.currentTurn.stage = "voting"
+    game.currentTurn.timerStartedAt = Rune.gameTime() / 1000
+    game.currentTurn.previousDescriberId = currentDescriberId
+    game.currentTurn.currentDescriberId = null
+    game.currentTurn.nextDescriberId = null
+
+    // Clear reactions when moving to voting stage
+    game.reactions = []
+
+    // Handle bot voting
+    handleBotVoting(game)
+
+    return
+  }
+
+  // Set the next player as current describer
   const nextDescriber = game.players.find((p) => p.id === nextPlayerId)
   if (nextDescriber) {
     nextDescriber.describing = true
-
-    // If the next player is a bot, prepare their description
-    if (nextDescriber.isBot && game.useAI) {
-      // Find the bot info
-      const botInfo = game.bots.find(b => b.id === nextPlayerId)
-      if (botInfo && !botInfo.aiDescription) {
-        // Generate an AI description for the bot if we don't have one yet
-        handleBotDescription(game, nextPlayerId)
-      }
-    }
   }
 
   // Set previous, current, and next describers
@@ -321,10 +428,16 @@ function moveToNextDescriber(game: GameState): void {
   game.currentTurn.currentDescriberId = nextPlayerId
 
   // Calculate the next-next player (who will be next after the current next player)
-  const nextNextIndex = nextIndex + 1
-  game.currentTurn.nextDescriberId = nextNextIndex < game.currentTurn.descriptionOrder.length
-    ? game.currentTurn.descriptionOrder[nextNextIndex]
-    : null
+  const nextIndex = game.currentTurn.descriptionOrder.indexOf(nextPlayerId)
+  let nextNextPlayerId: PlayerId | null = null
+  for (let i = nextIndex + 1; i < game.currentTurn.descriptionOrder.length; i++) {
+    const candidateId = game.currentTurn.descriptionOrder[i]
+    if (!game.currentTurn.completedDescribers.includes(candidateId)) {
+      nextNextPlayerId = candidateId
+      break
+    }
+  }
+  game.currentTurn.nextDescriberId = nextNextPlayerId
 
   // Clear reactions when moving to the next player
   game.reactions = []
@@ -366,28 +479,7 @@ function handleBotVoting(game: GameState): void {
   }
 }
 
-// Helper function to handle bot descriptions
-function handleBotDescription(game: GameState, botId: PlayerId): void {
-  // Find the bot in the game
-  const bot = game.players.find(p => p.id === botId)
-  if (!bot || !bot.isBot) return
 
-  // Find the bot in the bots array to get its description
-  const botInfo = game.bots.find(b => b.id === botId)
-  if (!botInfo) return
-
-  // Add a reaction to simulate the bot speaking
-  // We'll use a speech bubble emoji to indicate the bot is "speaking"
-  game.reactions.push({
-    playerId: botId,
-    emoji: "💬",
-    timestamp: Rune.gameTime() / 1000
-  })
-
-  // We're not using AI to avoid network requests
-  // Instead, we'll use the pre-defined descriptions from the bots.ts file
-  // The bot's description is already set when the bot is created
-}
 
 
 
@@ -423,9 +515,6 @@ Rune.initLogic({
     useBots: playerIds.length < 3, // Automatically use bots if fewer than 3 players
     botCount: playerIds.length < 3 ? 3 - playerIds.length : 0, // Add enough bots to reach 3 players
     bots: [], // Will be populated when game starts
-    useAI: false, // Disable AI features by default to avoid network requests
-    useSpeech: false, // Disable speech features by default
-    pendingAIRequests: {}, // Initialize empty pending AI requests
     gameStarted: false,
     round: 0,
     currentWord: "",
@@ -448,33 +537,7 @@ Rune.initLogic({
       game.botCount = (realPlayerCount < 3 && game.useBots) ? 3 - realPlayerCount : 0
     },
 
-    toggleAI: (_, { game }) => {
-      if (game.gameStarted) throw Rune.invalidAction()
 
-      // Toggle AI features
-      game.useAI = !game.useAI
-    },
-
-    toggleSpeech: (_, { game }) => {
-      if (game.gameStarted) throw Rune.invalidAction()
-
-      // Toggle speech features
-      game.useSpeech = !game.useSpeech
-    },
-
-    storeAIRequest: ({ requestId, botId, impostorAnalysis }, { game }) => {
-      // Initialize pendingAIRequests if it doesn't exist
-      if (!game.pendingAIRequests) {
-        game.pendingAIRequests = {}
-      }
-
-      // Store the request metadata
-      if (botId) {
-        game.pendingAIRequests[requestId] = { botId }
-      } else if (impostorAnalysis) {
-        game.pendingAIRequests[requestId] = { impostorAnalysis }
-      }
-    },
 
     setReadyToStart: (_, { game, playerId }) => {
       if (game.gameStarted) throw Rune.invalidAction()
@@ -512,89 +575,10 @@ Rune.initLogic({
       })
 
       // Mark the player as having voted
-      player.voted = true
-
-      // Check if all players have voted
+      player.voted = true      // Check if all players have voted
       const allVoted = game.players.every(p => p.voted)
       if (allVoted) {
-        game.currentTurn.votingComplete = true
-
-        // Check if the impostor was caught
-        game.currentTurn.impostorCaught = checkImpostorCaught(game)
-
-        // Move to results stage
-        game.currentTurn.stage = "result"
-        game.currentTurn.timerStartedAt = Rune.gameTime() / 1000
-
-        // Find the impostor
-        const impostor = game.players.find(p => p.isImpostor)
-        if (!impostor) return // Safety check
-
-        // Award points to players who correctly guessed the impostor
-        // even if the impostor wasn't caught by majority vote
-        const currentRoundVotes = game.votes.filter(vote => vote.round === game.round)
-        currentRoundVotes.forEach(vote => {
-          if (vote.suspectId === impostor.id) {
-            // This player correctly identified the impostor
-            const voter = game.players.find(p => p.id === vote.voterId)
-            if (voter && !voter.isImpostor) {
-              voter.score.nonImpostor += correctGuessPoints
-              voter.score.guessing += correctGuessPoints // For backward compatibility
-              voter.latestScore += correctGuessPoints
-              // For backward compatibility with Results.tsx
-              if (!voter.latestRoundScore) {
-                voter.latestRoundScore = { acting: 0, guessing: 0 }
-              }
-              voter.latestRoundScore.guessing += correctGuessPoints
-            }
-          }
-        })
-
-        // Award points if impostor was caught
-        if (game.currentTurn.impostorCaught) {
-          // Non-impostors get points for catching the impostor
-          game.players.forEach(player => {
-            if (!player.isImpostor) {
-              player.score.nonImpostor += nonImpostorCatchPoints
-              player.score.guessing += nonImpostorCatchPoints // For backward compatibility
-              player.latestScore += nonImpostorCatchPoints
-              // For backward compatibility with Results.tsx
-              if (!player.latestRoundScore) {
-                player.latestRoundScore = { acting: 0, guessing: 0 }
-              }
-              player.latestRoundScore.guessing += nonImpostorCatchPoints
-            }
-          })
-
-          // Game ends when impostor is caught
-          game.gameOver = true
-          game.winningTeam = "nonImpostors"
-
-          // Report game over to Rune
-          reportGameOver(game)
-        } else {
-          // If impostor wasn't caught, check if only 2 players remain
-          if (game.players.length <= 2) {
-            // Impostor wins if only 2 players remain
-            const impostor = game.players.find(p => p.isImpostor)
-            if (impostor) {
-              impostor.score.impostor += impostorSurvivePoints
-              impostor.score.acting += impostorSurvivePoints // For backward compatibility
-              impostor.latestScore = impostorSurvivePoints
-              // For backward compatibility with Results.tsx
-              impostor.latestRoundScore = {
-                acting: impostorSurvivePoints,
-                guessing: 0
-              }
-
-              game.gameOver = true
-              game.winningTeam = "impostor"
-
-              // Report game over to Rune
-              reportGameOver(game)
-            }
-          }
-        }
+        completeVoting(game)
       }
     },
     finishDescribing: (_, { game, playerId }) => {
@@ -739,53 +723,7 @@ Rune.initLogic({
       startGameCheck(game)
     },
   },
-  ai: {
-    promptResponse: ({ requestId, response }, { game }) => {
-      // Since Rune AI API is in preview, we'll use a workaround
-      // We'll store metadata in the game state when making requests
 
-      // Check if this is a bot description response
-      const botId = game.pendingAIRequests?.[requestId]?.botId
-      if (botId) {
-        // Store the AI-generated description for the bot
-        const bot = game.bots.find(b => b.id === botId)
-        if (bot) {
-          bot.aiDescription = response
-        }
-
-        // Remove the pending request
-        if (game.pendingAIRequests) {
-          delete game.pendingAIRequests[requestId]
-        }
-        return
-      }
-
-      // Check if this is an impostor analysis response
-      const analysisData = game.pendingAIRequests?.[requestId]?.impostorAnalysis
-      if (analysisData) {
-        // Parse the AI analysis
-        const ratingMatch = response.match(/Rating:\s*(\d+)/i)
-        const explanationMatch = response.match(/Explanation:\s*(.+)/i)
-
-        if (ratingMatch && explanationMatch) {
-          const rating = parseInt(ratingMatch[1])
-          const explanation = explanationMatch[1]
-
-          // Store the analysis
-          game.aiAnalysis = {
-            playerId: analysisData.playerId,
-            rating,
-            explanation
-          }
-        }
-
-        // Remove the pending request
-        if (game.pendingAIRequests) {
-          delete game.pendingAIRequests[requestId]
-        }
-      }
-    }
-  },
 
   update: ({ game }) => {
     if (!game.currentTurn) return
@@ -804,12 +742,15 @@ Rune.initLogic({
             const firstPlayer = game.players.find(p => p.id === firstPlayerId)
             if (firstPlayer && firstPlayer.isBot) {
               // Add a bot description reaction
-              handleBotDescription(game, firstPlayerId)
+              game.reactions.push({
+                playerId: firstPlayerId,
+                emoji: "💬",
+                timestamp: Rune.gameTime() / 1000
+              })
             }
           }
         }
-        break
-
+        break;
       case "describing":
         // Check if current describer is a bot
         const currentDescriberId = game.currentTurn.currentDescriberId
@@ -818,42 +759,25 @@ Rune.initLogic({
 
           // If it's a bot's turn, move to the next player after a shorter time (8 seconds)
           if (currentDescriber && currentDescriber.isBot) {
-            // Check if we need to prepare the next bot's description
-            if (game.useAI && currentTime >= game.currentTurn.timerStartedAt + 4) {
-              // Find the next bot in the speaking order
-              const nextDescriberId = game.currentTurn.nextDescriberId
-              if (nextDescriberId) {
-                const nextPlayer = game.players.find(p => p.id === nextDescriberId)
-                if (nextPlayer && nextPlayer.isBot) {
-                  // Find the bot info
-                  const botInfo = game.bots.find(b => b.id === nextDescriberId)
-                  if (botInfo && !botInfo.aiDescription) {
-                    // Generate an AI description for the next bot
-                    handleBotDescription(game, nextDescriberId)
-                  }
-                }
-              }
-            }
-
             // Move to the next player after 8 seconds
             if (currentTime >= game.currentTurn.timerStartedAt + 8) {
               moveToNextDescriber(game)
             }
           } else {
-            // For human players, use the full duration
+            // For human players, only auto-advance if they haven't manually finished
+            // This prevents skipping human players who are still describing
             if (currentTime >= game.currentTurn.timerStartedAt + descriptionDuration) {
-              // Time's up for the current describer, move to the next
-              moveToNextDescriber(game)
+              // Only auto-advance if the player is still the current describer
+              // This prevents race conditions where the player finished but the timer still fires
+              if (game.currentTurn.currentDescriberId === currentDescriberId) {
+                moveToNextDescriber(game)
+              }
             }
           }
         }
         break
 
-      case "voting":
-        if (currentTime >= game.currentTurn.timerStartedAt + votingDuration) {
-          // Time's up for voting
-          game.currentTurn.votingComplete = true
-
+      case "voting":        if (currentTime >= game.currentTurn.timerStartedAt + votingDuration) {
           // Auto-submit votes for players who haven't voted yet
           const nonVotingPlayers = game.players.filter(p => !p.voted)
 
@@ -888,88 +812,8 @@ Rune.initLogic({
             }
           }
 
-          // Check if the impostor was caught
-          game.currentTurn.impostorCaught = checkImpostorCaught(game)
-
-          // Move to results stage
-          game.currentTurn.stage = "result"
-          game.currentTurn.timerStartedAt = currentTime
-
-          // Find the impostor
-          const impostor = game.players.find(p => p.isImpostor)
-          if (!impostor) break // Safety check
-
-          // Award points to players who correctly guessed the impostor
-          // even if the impostor wasn't caught by majority vote
-          const currentRoundVotes = game.votes.filter(vote => vote.round === game.round)
-          currentRoundVotes.forEach(vote => {
-            if (vote.suspectId === impostor.id) {
-              // This player correctly identified the impostor
-              const voter = game.players.find(p => p.id === vote.voterId)
-              if (voter && !voter.isImpostor) {
-                voter.score.nonImpostor += correctGuessPoints
-                voter.score.guessing += correctGuessPoints // For backward compatibility
-                voter.latestScore += correctGuessPoints
-                // For backward compatibility with Results.tsx
-                if (!voter.latestRoundScore) {
-                  voter.latestRoundScore = { acting: 0, guessing: 0 }
-                }
-                voter.latestRoundScore.guessing += correctGuessPoints
-              }
-            }
-          })
-
-          // Award points if impostor was caught
-          if (game.currentTurn.impostorCaught) {
-            // Non-impostors get points for catching the impostor
-            game.players.forEach(player => {
-              if (!player.isImpostor) {
-                player.score.nonImpostor += nonImpostorCatchPoints
-                player.score.guessing += nonImpostorCatchPoints // For backward compatibility
-                player.latestScore += nonImpostorCatchPoints
-                // For backward compatibility with Results.tsx
-                if (!player.latestRoundScore) {
-                  player.latestRoundScore = { acting: 0, guessing: 0 }
-                }
-                player.latestRoundScore.guessing += nonImpostorCatchPoints
-              }
-            })
-
-            // Update persisted scores
-            updatePersistedScores(game)
-
-            // Game ends when impostor is caught
-            game.gameOver = true
-            game.winningTeam = "nonImpostors"
-
-            // Report game over to Rune
-            reportGameOver(game)
-          } else {
-            // If impostor wasn't caught, check if only 2 players remain
-            if (game.players.length <= 2) {
-              // Impostor wins if only 2 players remain
-              const impostor = game.players.find(p => p.isImpostor)
-              if (impostor) {
-                impostor.score.impostor += impostorSurvivePoints
-                impostor.score.acting += impostorSurvivePoints // For backward compatibility
-                impostor.latestScore = impostorSurvivePoints
-                // For backward compatibility with Results.tsx
-                impostor.latestRoundScore = {
-                  acting: impostorSurvivePoints,
-                  guessing: 0
-                }
-
-                // Update persisted scores
-                updatePersistedScores(game)
-
-                game.gameOver = true
-                game.winningTeam = "impostor"
-
-                // Report game over to Rune
-                reportGameOver(game)
-              }
-            }
-          }
+          // Complete voting using centralized logic
+          completeVoting(game)
         }
         break
 

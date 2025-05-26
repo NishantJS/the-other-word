@@ -1,9 +1,10 @@
 import React, { memo, useEffect, useState } from 'react'
 import styled, { keyframes, css } from 'styled-components/macro'
 import { useAtomValue } from 'jotai'
-import { $game, $currentTurn, $round } from '../../state/$state'
+import { $game, $currentTurn, $round, $yourPlayer, $playersInfo } from '../../state/$state'
 import { rel } from '../../style/rel'
 import { useTimerValue } from '../Timer/useTimerValue'
+import { turnCountdown, descriptionDuration, votingDuration, resultDuration } from '../../logic'
 
 const slideIn = keyframes`
   0% { transform: translateX(-${rel(100)}); opacity: 0; }
@@ -26,25 +27,73 @@ export const GameProgressIndicator = memo(() => {
   const game = useAtomValue($game)
   const currentTurn = useAtomValue($currentTurn)
   const round = useAtomValue($round)
+  const yourPlayer = useAtomValue($yourPlayer)
+  const playersInfo = useAtomValue($playersInfo)
   const [showProgress, setShowProgress] = useState(true)
-  const [stableRound, setStableRound] = useState(0)
-  // Get timer value for current stage
+    // Get timer value for current stage with dynamic duration based on stage
+  const getStageDuration = () => {
+    if (!currentTurn) return 30
+    switch (currentTurn.stage) {
+      case 'countdown': return turnCountdown
+      case 'describing': return descriptionDuration
+      case 'voting': return votingDuration
+      case 'result': return resultDuration
+      default: return 30
+    }
+  }
+  
   const timerValue = useTimerValue({
     startedAt: currentTurn?.timerStartedAt,
-    duration: 30 // Fixed duration for consistency
+    duration: getStageDuration()
   })
 
-  // Stabilize the round counter to prevent infinite updates
-  useEffect(() => {
-    const gameRound = game?.round ?? round
-    if (gameRound !== stableRound) {
-      setStableRound(gameRound)
+  // Get current and next player information
+  const getCurrentPlayerInfo = () => {
+    if (!currentTurn) return null
+    
+    const currentId = currentTurn.currentDescriberId
+    const nextId = currentTurn.nextDescriberId
+    
+    if (!currentId) return null
+    
+    // Get current player info
+    const currentPlayerInfo = playersInfo[currentId]
+    const currentGamePlayer = game.players.find(p => p.id === currentId)
+    const currentIsBot = currentGamePlayer?.isBot || false
+    const currentBotInfo = currentIsBot ? game.bots.find(b => b.id === currentId) : null
+    
+    const currentPlayer = {
+      id: currentId,
+      name: currentPlayerInfo?.displayName || currentBotInfo?.name || 'Player',
+      isBot: currentIsBot,
+      isYou: currentId === yourPlayer?.id
     }
-  }, [game?.round, round, stableRound])
-
+    
+    // Get next player info if available
+    let nextPlayer = null
+    if (nextId) {
+      const nextPlayerInfo = playersInfo[nextId]
+      const nextGamePlayer = game.players.find(p => p.id === nextId)
+      const nextIsBot = nextGamePlayer?.isBot || false
+      const nextBotInfo = nextIsBot ? game.bots.find(b => b.id === nextId) : null
+      
+      nextPlayer = {
+        id: nextId,
+        name: nextPlayerInfo?.displayName || nextBotInfo?.name || 'Player',
+        isBot: nextIsBot,
+        isYou: nextId === yourPlayer?.id
+      }
+    }
+    
+    return { current: currentPlayer, next: nextPlayer }
+  }
+  
+  const playerInfo = getCurrentPlayerInfo()
+  
   // Calculate progress using available game state properties
   const totalPlayers = game.players.filter(p => !p.isBot).length
-  const progressPercentage = Math.min((stableRound / Math.max(totalPlayers, 1)) * 100, 100)
+  const currentRound = game?.round ?? round
+  const progressPercentage = Math.min((currentRound / Math.max(totalPlayers, 1)) * 100, 100)
 
   // Stage icons
   const getStageIcon = (stage: string) => {
@@ -57,40 +106,124 @@ export const GameProgressIndicator = memo(() => {
     }
   }
 
-  // Stage display name
-  const getStageDisplayName = (stage: string) => {
-    switch (stage) {
-      case 'countdown': return 'Ready'
-      case 'describing': return 'Describe'
-      case 'voting': return 'Vote'
-      case 'result': return 'Results'
-      default: return 'Game'
+  // Get stage-specific information to display
+  const getStageInfo = () => {
+    if (!currentTurn) return null
+    
+    switch (currentTurn.stage) {
+      case 'countdown':
+        return {
+          title: 'Get Ready!',
+          subtitle: playerInfo?.current.isYou ? 'Your turn to describe!' : `${playerInfo?.current.name} is up next`,
+          showTimer: true,
+          showNext: false
+        }
+      case 'describing':
+        if (playerInfo?.current.isYou) {
+          return {
+            title: 'Your Turn!',
+            subtitle: 'Describe your word clearly',
+            showTimer: true,
+            showNext: false
+          }
+        } else {
+          return {
+            title: `${playerInfo?.current.name} is describing`,
+            subtitle: playerInfo?.next?.isYou ? 'You\'re next!' : playerInfo?.next ? `Next: ${playerInfo.next.name}` : 'Listen carefully',
+            showTimer: true,
+            showNext: !!playerInfo?.next
+          }
+        }
+      case 'voting':
+        return {
+          title: 'Voting Time!',
+          subtitle: 'Who do you think is the impostor?',
+          showTimer: true,
+          showNext: false
+        }
+      case 'result':
+        return {
+          title: 'Results',
+          subtitle: 'See how everyone did',
+          showTimer: false,
+          showNext: false
+        }
+      default:
+        return {
+          title: 'Game in Progress',
+          subtitle: '',
+          showTimer: true,
+          showNext: false
+        }
     }
   }
+
+  const stageInfo = getStageInfo()
 
   if (!currentTurn || !showProgress) return null
 
   return (
-    <ProgressContainer>      <ProgressHeader>
+    <ProgressContainer>
+      <ProgressHeader>
         <StageIndicator>
           <StageIcon>{getStageIcon(currentTurn.stage)}</StageIcon>
-          <StageName>{getStageDisplayName(currentTurn.stage)}</StageName>
-          {timerValue !== null && (
-            <TimerDisplay urgent={timerValue < 10}>
+          <StageInfo>
+            <StageName>{stageInfo?.title || 'Game'}</StageName>
+            <StageSubtitle>{stageInfo?.subtitle}</StageSubtitle>
+          </StageInfo>
+          {stageInfo?.showTimer && timerValue !== null && (
+            <TimerDisplay urgent={timerValue < 5}>
               {Math.ceil(Math.max(0, timerValue))}s
             </TimerDisplay>
           )}
         </StageIndicator>
-        <RoundCounter>
-          Round {stableRound + 1} of {totalPlayers}
-        </RoundCounter>
       </ProgressHeader>
+
+      {/* Show current player timer prominently during describing stage */}
+      {currentTurn.stage === 'describing' && timerValue !== null && (
+        <CurrentPlayerTimer>
+          <PlayerTimerLabel>
+            {playerInfo?.current.isYou ? 'Your time:' : `${playerInfo?.current.name}'s time:`}
+          </PlayerTimerLabel>
+          <LargeTimerDisplay urgent={timerValue < 5}>
+            {Math.ceil(Math.max(0, timerValue))}s
+          </LargeTimerDisplay>
+        </CurrentPlayerTimer>
+      )}
+
+      {/* Show next player info during describing stage */}
+      {currentTurn.stage === 'describing' && stageInfo?.showNext && playerInfo?.next && (
+        <NextPlayerInfo>
+          <NextPlayerLabel>Next up:</NextPlayerLabel>
+          <NextPlayerName isYou={playerInfo.next.isYou}>
+            {playerInfo.next.isYou ? 'You!' : playerInfo.next.name}
+          </NextPlayerName>
+        </NextPlayerInfo>
+      )}
+
+      {/* Show voting info during voting stage */}
+      {currentTurn.stage === 'voting' && (
+        <VotingProgress>
+          <VotingLabel>
+            {game.players.filter(p => p.voted).length} / {game.players.length} voted
+          </VotingLabel>
+          <VotingIndicator>
+            {game.players.map(player => (
+              <VoteDot key={player.id} voted={player.voted} />
+            ))}
+          </VotingIndicator>
+        </VotingProgress>
+      )}
+
+      {/* Only show overall progress bar during non-describing stages */}
+      {currentTurn.stage !== 'describing' && (
         <ProgressBarContainer>
-        <ProgressBar>
-          <ProgressFill percentage={progressPercentage} />
-        </ProgressBar>
-        <ProgressText>{Math.round(progressPercentage)}%</ProgressText>
-      </ProgressBarContainer>
+          <ProgressBar>
+            <ProgressFill percentage={progressPercentage} />
+          </ProgressBar>
+          <ProgressText>{Math.round(progressPercentage)}%</ProgressText>
+        </ProgressBarContainer>
+      )}
       
       <MinimizeButton onClick={() => setShowProgress(false)}>
         ⌄
@@ -131,18 +264,29 @@ const ProgressHeader = styled.div`
 const StageIndicator = styled.div`
   display: flex;
   align-items: center;
-  gap: ${rel(6)};
+  gap: ${rel(8)};
+  flex: 1;
 `
 
-const StageIcon = styled.span`
-  font-size: ${rel(16)};
-  animation: ${pulse} 2s infinite ease-in-out;
+const StageInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${rel(2)};
+  flex: 1;
 `
 
 const StageName = styled.span`
   color: white;
   font-size: ${rel(14)};
   font-weight: bold;
+  line-height: 1.2;
+`
+
+const StageSubtitle = styled.span`
+  color: #e4faff;
+  font-size: ${rel(11)};
+  line-height: 1.2;
+  opacity: 0.9;
 `
 
 const TimerDisplay = styled.span<{ urgent: boolean }>`
@@ -152,12 +296,40 @@ const TimerDisplay = styled.span<{ urgent: boolean }>`
   background: rgba(0, 0, 0, 0.4);
   padding: ${rel(2)} ${rel(6)};
   border-radius: ${rel(8)};
-  margin-left: ${rel(8)};
   min-width: ${rel(28)};
   text-align: center;
+  flex-shrink: 0;
   
   ${props => props.urgent && css`
     animation: ${urgentPulse} 1s infinite ease-in-out;
+  `}
+`
+
+const CurrentPlayerTimer = styled.div`
+  margin: ${rel(8)} 0;
+  padding: ${rel(12)} ${rel(16)};
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: ${rel(12)};
+  text-align: center;
+  border: ${rel(2)} solid rgba(76, 175, 80, 0.3);
+`
+
+const PlayerTimerLabel = styled.div`
+  color: #e4faff;
+  font-size: ${rel(14)};
+  margin-bottom: ${rel(6)};
+  font-weight: bold;
+`
+
+const LargeTimerDisplay = styled.div<{ urgent: boolean }>`
+  color: ${props => props.urgent ? '#ff5722' : '#4caf50'};
+  font-size: ${rel(32)};
+  font-weight: bold;
+  text-shadow: 0 ${rel(2)} ${rel(4)} rgba(0, 0, 0, 0.5);
+  
+  ${props => props.urgent && css`
+    animation: ${urgentPulse} 0.5s infinite ease-in-out;
+    color: #ff1744;
   `}
 `
 
@@ -218,4 +390,63 @@ const MinimizeButton = styled.button`
     background: rgba(0, 0, 0, 0.8);
     transform: scale(1.1);
   }
+`
+
+const StageIcon = styled.span`
+  font-size: ${rel(16)};
+  animation: ${pulse} 2s infinite ease-in-out;
+  flex-shrink: 0;
+`
+
+const NextPlayerInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${rel(6)};
+  margin: ${rel(6)} 0;
+  padding: ${rel(4)} ${rel(8)};
+  background: rgba(255, 102, 0, 0.2);
+  border-radius: ${rel(6)};
+  border-left: ${rel(3)} solid #ff6600;
+`
+
+const NextPlayerLabel = styled.span`
+  color: #ffcc99;
+  font-size: ${rel(11)};
+  font-weight: bold;
+`
+
+const NextPlayerName = styled.span<{ isYou: boolean }>`
+  color: ${props => props.isYou ? '#ffcc00' : '#white'};
+  font-size: ${rel(11)};
+  font-weight: ${props => props.isYou ? 'bold' : 'normal'};
+  animation: ${props => props.isYou ? css`${pulse} 1.5s infinite ease-in-out` : 'none'};
+`
+
+const VotingProgress = styled.div`
+  margin: ${rel(8)} 0;
+  padding: ${rel(6)} ${rel(8)};
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: ${rel(6)};
+  text-align: center;
+`
+
+const VotingLabel = styled.div`
+  color: #e4faff;
+  font-size: ${rel(11)};
+  margin-bottom: ${rel(4)};
+`
+
+const VotingIndicator = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: ${rel(3)};
+  flex-wrap: wrap;
+`
+
+const VoteDot = styled.div<{ voted: boolean }>`
+  width: ${rel(8)};
+  height: ${rel(8)};
+  border-radius: 50%;
+  background: ${props => props.voted ? '#4caf50' : 'rgba(255, 255, 255, 0.3)'};
+  transition: background-color 0.3s ease;
 `

@@ -22,10 +22,7 @@ export const $state = atom<{
     winningTeam: null,
     useBots: false,
     botCount: 0,
-    bots: [],
-    useAI: true,
-    useSpeech: true,
-    pendingAIRequests: {}
+    bots: []
   },
   players: {},
   yourPlayerId: undefined,

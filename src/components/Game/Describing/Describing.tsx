@@ -25,56 +25,9 @@ const pulse = keyframes`
   100% { transform: scale(1); }
 `;
 
-// Countdown timer component to show remaining time
-const CountdownTimer = memo(({
-  startedAt,
-  duration,
-  onTimeUp
-}: {
-  startedAt: number,
-  duration: number,
-  onTimeUp?: () => void
-}) => {
-  const [timeLeft, setTimeLeft] = useState(Math.max(0, Math.ceil(duration - (Rune.gameTime() / 1000 - startedAt))))
-  const [milliseconds, setMilliseconds] = useState(0)
-  
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const timePassedMs = Rune.gameTime() - (startedAt * 1000)
-      const timeLeftSec = Math.max(0, Math.ceil(duration - (timePassedMs / 1000)))
-      const ms = Math.floor((timePassedMs % 1000) / 10).toString().padStart(2, '0')
-      
-      setTimeLeft(timeLeftSec)
-      setMilliseconds(parseInt(ms))
-
-      if (timeLeftSec <= 0) {
-        clearInterval(interval)
-        if (onTimeUp) {
-          onTimeUp()
-        }
-      }
-    }, 50)
-
-    return () => clearInterval(interval)
-  }, [startedAt, duration, onTimeUp])
-
-  return (
-    <TimeDisplay isLow={timeLeft <= 5}>
-      {timeLeft}:{milliseconds.toString().padStart(2, '0')}
-    </TimeDisplay>
-  )
-})
-
 export const Describing = memo(() => {
   const yourPlayer = useAtomValue($yourPlayer)
   const currentTurn = useAtomValue($currentTurn)
-
-  // Function to handle auto-finish when time is up
-  const handleTimeUp = () => {
-    if (yourPlayer?.describing) {
-      Rune.actions?.finishDescribing?.()
-    }
-  }
 
   // If player is not describing, show a spectating view
   if (!yourPlayer?.describing) {
@@ -84,15 +37,6 @@ export const Describing = memo(() => {
   // If player is describing, show their secret word
   return (
     <Root>
-      {/* Countdown at the very top */}
-      <CountdownContainer>
-        <CountdownTimer
-          startedAt={currentTurn?.timerStartedAt || 0}
-          duration={descriptionDuration}
-          onTimeUp={handleTimeUp}
-        />
-      </CountdownContainer>
-      
       {/* Reactions from other players */}
       <Reactions />
       
@@ -145,32 +89,17 @@ const SpectatingView = memo(() => {
   const isNextPlayer = nextDescriberId === yourPlayer?.id
 
   if (!describingPlayer) return null
-
   return (
     <Root>
-      {/* Countdown at the very top */}
-      <CountdownContainer>
-        <CountdownTimer
-          startedAt={currentTurn?.timerStartedAt || 0}
-          duration={descriptionDuration}
-          onTimeUp={undefined}
-        />
-      </CountdownContainer>
-
-      {/* Show status indicators in corner */}
-      {isNextPlayer ? (
+      {/* Show status indicators in corner - NO IMPOSTOR REVEAL */}
+      {isNextPlayer && (
         <NextPlayerAlert>
           <AlertIcon>👁️</AlertIcon>
           You're next!
         </NextPlayerAlert>
-      ) : isImpostor && (
-        <ImpostorChip>
-          <EyeIcon>👁️</EyeIcon>
-          <ImpostorText>You are the impostor</ImpostorText>
-        </ImpostorChip>
       )}
       
-      {/* Simplified speaker info */}      <SpeakerDisplay>
+      {/* Simplified speaker info */}<SpeakerDisplay>
         <AvatarImg src={describingPlayer.avatarUrl} />
         <PlayerName>
           {describingPlayer.displayName}
@@ -190,7 +119,6 @@ const SpectatingView = memo(() => {
   )
 })
 
-// Styled Components
 const Root = styled.div`
   display: flex;
   flex-direction: column;
@@ -199,26 +127,6 @@ const Root = styled.div`
   height: 100%;
   position: relative;
   overflow: hidden;
-`
-
-const CountdownContainer = styled.div`
-  position: absolute;
-  top: ${rel(0)};
-  left: 0;
-  right: 0;
-  display: flex;
-  justify-content: center;
-  padding: ${rel(4)} 0;
-  z-index: 10;
-`
-
-const TimeDisplay = styled.div<{ isLow: boolean }>`
-  font-family: 'Ubuntu Mono', monospace;
-  font-size: ${rel(28)};
-  font-weight: bold;
-  color: ${props => props.isLow ? '#ff5252' : '#ffcc00'};
-  text-shadow: 0 ${rel(2)} ${rel(4)} rgba(0, 0, 0, 0.3);
-  animation: ${props => props.isLow ? css`${pulse} 0.8s infinite` : 'none'};
 `
 
 const WordChip = styled.div`
@@ -378,30 +286,6 @@ const NextPlayerAlert = styled.div`
 
 const AlertIcon = styled.span`
   font-size: ${rel(14)};
-`
-
-const ImpostorChip = styled.div`
-  position: absolute;
-  top: ${rel(8)};
-  right: ${rel(8)};
-  display: flex;
-  align-items: center;
-  gap: ${rel(6)};
-  background: rgba(0, 0, 0, 0.4);
-  border-radius: ${rel(8)};
-  padding: ${rel(6)} ${rel(10)};
-  z-index: 5;
-  box-shadow: 0 ${rel(2)} ${rel(4)} rgba(0, 0, 0, 0.2);
-  animation: ${fadeIn} 0.3s ease-out;
-`
-
-const EyeIcon = styled.span`
-  font-size: ${rel(12)};
-`
-
-const ImpostorText = styled.span`
-  font-size: ${rel(10)};
-  color: #e4faff;
 `
 
 const SpeakerDisplay = styled.div`

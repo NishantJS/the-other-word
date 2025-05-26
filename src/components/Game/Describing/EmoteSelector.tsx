@@ -24,8 +24,7 @@ export const EmoteSelector = memo(() => {
         emoji
       })
     } catch (error: unknown) {
-      // Handle errors (e.g., throttling)
-      console.error("Error sending reaction:", error)
+      // Handle errors silently (e.g., throttling)
     }
 
     // Play sound

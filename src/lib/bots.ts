@@ -75,17 +75,11 @@ export function createBot(index: number): BotPlayer {
   const nameIndex = Math.floor(Math.random() * BOT_NAMES.length)
   const avatarIndex = Math.floor(Math.random() * BOT_AVATARS.length)
 
-  // Generate random voice properties
-  const voicePitch = 0.8 + Math.random() * 0.4 // Range: 0.8 to 1.2
-  const voiceRate = 0.9 + Math.random() * 0.2 // Range: 0.9 to 1.1
-
   return {
     id: generateBotId(index),
     name: `${BOT_NAMES[nameIndex]}-${index}`,
     avatarUrl: BOT_AVATARS[avatarIndex],
-    description: getRandomDescription("generic"),
-    voicePitch,
-    voiceRate
+    description: getRandomDescription("generic")
   }
 }
 
