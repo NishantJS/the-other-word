@@ -1,7 +1,6 @@
 import { similarWordPairs, GameState } from "./lib/types/GameState"
 import { startGameCheck } from "./lib/startGameCheck"
 import { PlayerId } from "rune-sdk/multiplayer"
-import { getBotVote } from "./lib/bots"
 
 // Game constants
 export const numRounds = 3
@@ -63,20 +62,8 @@ function startNewRound(game: GameState): void {
   }
 
   // Select a random player to be the impostor
-  // Prefer human players for the impostor role (70% chance)
-  const humanPlayers = game.players.filter(p => !p.isBot)
-
-  let impostorPlayer: typeof game.players[0] | undefined
-
-  // If we have human players and random value is < 0.7, choose a human impostor
-  if (humanPlayers.length > 0 && Math.random() < 0.7) {
-    const randomHumanIndex = Math.floor(Math.random() * humanPlayers.length)
-    impostorPlayer = humanPlayers[randomHumanIndex]
-  } else {
-    // Otherwise choose any player (human or bot)
-    const impostorIndex = Math.floor(Math.random() * game.players.length)
-    impostorPlayer = game.players[impostorIndex]
-  }
+  const impostorIndex = Math.floor(Math.random() * game.players.length)
+  const impostorPlayer = game.players[impostorIndex]
 
   if (impostorPlayer) {
     impostorPlayer.isImpostor = true
@@ -374,9 +361,6 @@ function moveToNextDescriber(game: GameState): void {
     // Clear reactions when moving to voting stage
     game.reactions = []
 
-    // Handle bot voting
-    handleBotVoting(game)
-
     return
   }
 
@@ -411,9 +395,6 @@ function moveToNextDescriber(game: GameState): void {
     // Clear reactions when moving to voting stage
     game.reactions = []
 
-    // Handle bot voting
-    handleBotVoting(game)
-
     return
   }
 
@@ -445,39 +426,7 @@ function moveToNextDescriber(game: GameState): void {
   game.currentTurn.timerStartedAt = Rune.gameTime() / 1000
 }
 
-// Helper function to handle bot voting
-function handleBotVoting(game: GameState): void {
-  if (!game.currentTurn) return
 
-  // Find the impostor
-  const impostor = game.players.find(p => p.isImpostor)
-  if (!impostor) return
-
-  // Get all bot players
-  const botPlayers = game.players.filter(p => p.isBot)
-
-  // Get all player IDs
-  const playerIds = game.players.map(p => p.id)
-
-  // Make bots vote
-  for (const bot of botPlayers) {
-    // Skip if bot has already voted (shouldn't happen, but just in case)
-    if (bot.voted) continue
-
-    // Get bot's vote
-    const suspectId = getBotVote(bot.id, playerIds, impostor.id)
-
-    // Record the vote
-    game.votes.push({
-      voterId: bot.id,
-      suspectId,
-      round: game.round
-    })
-
-    // Mark the bot as having voted
-    bot.voted = true
-  }
-}
 
 
 
@@ -485,7 +434,7 @@ function handleBotVoting(game: GameState): void {
 
 // Initialize the game logic
 Rune.initLogic({
-  minPlayers: 1,  // Changed to 1 to allow single player with bots
+  minPlayers: 3,  // Minimum players required for the game
   maxPlayers: 6,  // Maximum allowed by Rune SDK
   // @ts-ignore - persistPlayerData is supported by Rune SDK
   persistPlayerData: true, // Enable persisted player data
@@ -505,16 +454,12 @@ Rune.initLogic({
       },
       latestScore: 0,
       voted: false,
-      isBot: false, // Real players are not bots
       // For backward compatibility with Results.tsx
       latestRoundScore: {
         acting: 0,
         guessing: 0
       }
     })),
-    useBots: playerIds.length < 3, // Automatically use bots if fewer than 3 players
-    botCount: playerIds.length < 3 ? 3 - playerIds.length : 0, // Add enough bots to reach 3 players
-    bots: [], // Will be populated when game starts
     gameStarted: false,
     round: 0,
     currentWord: "",
@@ -526,19 +471,6 @@ Rune.initLogic({
     winningTeam: null,
   }),
   actions: {
-    toggleBots: (_, { game }) => {
-      if (game.gameStarted) throw Rune.invalidAction()
-
-      // Toggle bot usage
-      game.useBots = !game.useBots
-
-      // Update bot count based on current player count
-      const realPlayerCount = game.players.filter(p => !p.isBot).length
-      game.botCount = (realPlayerCount < 3 && game.useBots) ? 3 - realPlayerCount : 0
-    },
-
-
-
     setReadyToStart: (_, { game, playerId }) => {
       if (game.gameStarted) throw Rune.invalidAction()
 
@@ -736,42 +668,19 @@ Rune.initLogic({
           game.currentTurn.stage = "describing"
           game.currentTurn.timerStartedAt = currentTime
 
-          // If the first player is a bot, add a reaction for them
-          const firstPlayerId = game.currentTurn.currentDescriberId
-          if (firstPlayerId) {
-            const firstPlayer = game.players.find(p => p.id === firstPlayerId)
-            if (firstPlayer && firstPlayer.isBot) {
-              // Add a bot description reaction
-              game.reactions.push({
-                playerId: firstPlayerId,
-                emoji: "💬",
-                timestamp: Rune.gameTime() / 1000
-              })
-            }
-          }
+
         }
         break;
       case "describing":
-        // Check if current describer is a bot
+        // Auto-advance after description duration
         const currentDescriberId = game.currentTurn.currentDescriberId
         if (currentDescriberId) {
-          const currentDescriber = game.players.find(p => p.id === currentDescriberId)
-
-          // If it's a bot's turn, move to the next player after a shorter time (8 seconds)
-          if (currentDescriber && currentDescriber.isBot) {
-            // Move to the next player after 8 seconds
-            if (currentTime >= game.currentTurn.timerStartedAt + 8) {
+          // For all players, auto-advance if they haven't manually finished
+          if (currentTime >= game.currentTurn.timerStartedAt + descriptionDuration) {
+            // Only auto-advance if the player is still the current describer
+            // This prevents race conditions where the player finished but the timer still fires
+            if (game.currentTurn.currentDescriberId === currentDescriberId) {
               moveToNextDescriber(game)
-            }
-          } else {
-            // For human players, only auto-advance if they haven't manually finished
-            // This prevents skipping human players who are still describing
-            if (currentTime >= game.currentTurn.timerStartedAt + descriptionDuration) {
-              // Only auto-advance if the player is still the current describer
-              // This prevents race conditions where the player finished but the timer still fires
-              if (game.currentTurn.currentDescriberId === currentDescriberId) {
-                moveToNextDescriber(game)
-              }
             }
           }
         }
@@ -781,24 +690,14 @@ Rune.initLogic({
           // Auto-submit votes for players who haven't voted yet
           const nonVotingPlayers = game.players.filter(p => !p.voted)
 
-          // Find the impostor for bot voting
-          const impostorPlayer = game.players.find(p => p.isImpostor)
-          if (impostorPlayer) {
-            const playerIds = game.players.map(p => p.id)
-
-            // Make each non-voting player vote
+          // Auto-submit random votes for players who haven't voted yet
+          if (nonVotingPlayers.length > 0) {
+            // Make each non-voting player vote randomly
             for (const player of nonVotingPlayers) {
-              let suspectId: PlayerId
-
-              if (player.isBot) {
-                // Bots use their voting logic
-                suspectId = getBotVote(player.id, playerIds, impostorPlayer.id)
-              } else {
-                // Human players who didn't vote get a random vote
-                const otherPlayers = game.players.filter(p => p.id !== player.id)
-                const randomIndex = Math.floor(Math.random() * otherPlayers.length)
-                suspectId = otherPlayers[randomIndex].id
-              }
+              // Players who didn't vote get a random vote
+              const otherPlayers = game.players.filter(p => p.id !== player.id)
+              const randomIndex = Math.floor(Math.random() * otherPlayers.length)
+              const suspectId = otherPlayers[randomIndex].id
 
               // Record the vote
               game.votes.push({

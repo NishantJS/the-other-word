@@ -1,6 +1,6 @@
 import { useAtomValue } from "jotai"
-import { $players, $yourPlayer, $game } from "../../state/$state"
-import { useMemo, memo } from "react"
+import { $players, $yourPlayer } from "../../state/$state"
+import { useMemo, memo, useState } from "react"
 import styled from "styled-components/macro"
 
 import logo from "./new-logo.svg"
@@ -10,25 +10,12 @@ import { rel } from "../../style/rel"
 export const Start = memo(() => {
   const players = useAtomValue($players)
   const yourPlayer = useAtomValue($yourPlayer)
-  const game = useAtomValue($game)
-
+  const [showHowToPlay, setShowHowToPlay] = useState(false)
 
   const numReady = useMemo(
     () => players.filter((p) => p.readyToStart).length,
     [players]
   )
-
-  // Count real players (non-bots)
-  const realPlayerCount = useMemo(
-    () => players.filter(p => !p.isBot).length,
-    [players]
-  )
-
-  // Determine if we should show bot toggle
-  const showBotToggle = realPlayerCount < 6 && realPlayerCount >= 3
-
-  // Determine if we should show bot info message
-  const showBotInfo = realPlayerCount < 3
 
   return (
     <Root>
@@ -44,34 +31,9 @@ export const Start = memo(() => {
         </PlayerCounter>
 
         <OptionsContainer>
-          {/* Bot information for fewer than 3 players */}
-          {showBotInfo && (
-            <InfoCard warning>
-              <InfoText>Not enough players. Bots will be added automatically.</InfoText>
-            </InfoCard>
-          )}
-
-          {/* Bot toggle button for 3-5 players */}
-          {showBotToggle && (
-            <ToggleContainer>
-              <ToggleLabel>Bots</ToggleLabel>              <ToggleSwitch
-                active={game.useBots}
-                onClick={() => Rune.actions.toggleBots()}
-              >
-                <ToggleSwitchTrack active={game.useBots}>
-                  <ToggleSwitchThumb active={game.useBots} />
-                </ToggleSwitchTrack>
-                <ToggleSwitchLabel>{game.useBots ? "On" : "Off"}</ToggleSwitchLabel>
-              </ToggleSwitch>
-            </ToggleContainer>
-          )}
-
-          {/* Bot status indicator */}
-          {game.useBots && (
-            <InfoCard success>
-              <InfoText>{game.botCount} bot{game.botCount > 1 ? 's' : ''} will join the game</InfoText>
-            </InfoCard>
-          )}
+          <HowToPlayButton onClick={() => setShowHowToPlay(true)}>
+            ❓ How to Play
+          </HowToPlayButton>
         </OptionsContainer>
 
         <ReadyButton
@@ -81,6 +43,61 @@ export const Start = memo(() => {
           {yourPlayer && yourPlayer.readyToStart ? "Waiting for others..." : "I'm Ready"}        </ReadyButton>
       </ContentContainer>
 
+      {/* How to Play Modal */}
+      {showHowToPlay && (
+        <ModalOverlay onClick={() => setShowHowToPlay(false)}>
+          <ModalContent onClick={(e) => e.stopPropagation()}>
+            <ModalHeader>
+              <ModalTitle>🎭 How to Play</ModalTitle>
+              <CloseButton onClick={() => setShowHowToPlay(false)}>✕</CloseButton>
+            </ModalHeader>
+            <ModalBody>
+              <GameSection>
+                <SectionTitle>🎯 Objective</SectionTitle>
+                <SectionText>
+                  Find the impostor! One player gets a slightly different word and must blend in while others try to identify them.
+                </SectionText>
+              </GameSection>
+
+              <GameSection>
+                <SectionTitle>🎮 How It Works</SectionTitle>
+                <StepList>
+                  <StepItem>
+                    <StepNumber>1</StepNumber>
+                    <StepText>Each player receives a secret word</StepText>
+                  </StepItem>
+                  <StepItem>
+                    <StepNumber>2</StepNumber>
+                    <StepText>One player (the impostor) gets a similar but different word</StepText>
+                  </StepItem>
+                  <StepItem>
+                    <StepNumber>3</StepNumber>
+                    <StepText>Players take turns describing their word (15 seconds each)</StepText>
+                  </StepItem>
+                  <StepItem>
+                    <StepNumber>4</StepNumber>
+                    <StepText>After all descriptions, vote for who you think is the impostor</StepText>
+                  </StepItem>
+                  <StepItem>
+                    <StepNumber>5</StepNumber>
+                    <StepText>Earn points for correct guesses and successful deception!</StepText>
+                  </StepItem>
+                </StepList>
+              </GameSection>
+
+              <GameSection>
+                <SectionTitle>💡 Tips</SectionTitle>
+                <TipList>
+                  <TipItem>• Be descriptive but not too specific</TipItem>
+                  <TipItem>• Listen carefully to other players</TipItem>
+                  <TipItem>• If you're the impostor, try to blend in!</TipItem>
+                  <TipItem>• Use the reaction emotes during descriptions</TipItem>
+                </TipList>
+              </GameSection>
+            </ModalBody>
+          </ModalContent>
+        </ModalOverlay>
+      )}
     </Root>
   )
 })
@@ -160,76 +177,171 @@ const OptionsContainer = styled.div`
   margin-bottom: ${rel(40)};
 `
 
-const InfoCard = styled.div<{ warning?: boolean; success?: boolean }>`
-  font-size: ${rel(16)};
-  text-align: center;
-  color: ${props => props.warning ? '#212121' : 'white'};
-  background-color: ${props =>
-    props.warning ? 'rgba(255, 193, 7, 0.9)' :
-    props.success ? 'rgba(76, 175, 80, 0.8)' :
-    'rgba(255, 255, 255, 0.15)'};
-  padding: ${rel(12)} ${rel(16)};
-  border-radius: ${rel(8)};
+const HowToPlayButton = styled.button`
   width: 100%;
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  border-radius: ${rel(8)};
+  color: white;
+  font-size: ${rel(16)};
+  font-weight: 500;
+  padding: ${rel(12)} ${rel(16)};
+  text-align: center;
+  cursor: pointer;
   backdrop-filter: blur(5px);
   box-shadow: 0 ${rel(2)} ${rel(8)} rgba(0, 0, 0, 0.2);
+  transition: all 150ms ease-out;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(${rel(-1)});
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
 `
 
-const InfoText = styled.div`
-  font-size: ${rel(14)};
-  line-height: 1.4;
+// Modal Components
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: ${rel(20)};
+  backdrop-filter: blur(${rel(4)});
 `
 
-const ToggleContainer = styled.div`
+const ModalContent = styled.div`
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: ${rel(16)};
+  max-width: ${rel(500)};
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 ${rel(20)} ${rel(40)} rgba(0, 0, 0, 0.3);
+  border: ${rel(1)} solid rgba(255, 255, 255, 0.2);
+`
+
+const ModalHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 100%;
-  background-color: rgba(255, 255, 255, 0.15);
-  padding: ${rel(12)} ${rel(16)};
-  border-radius: ${rel(8)};
-  backdrop-filter: blur(5px);
-  box-shadow: 0 ${rel(2)} ${rel(8)} rgba(0, 0, 0, 0.2);
+  padding: ${rel(20)} ${rel(24)};
+  border-bottom: ${rel(1)} solid rgba(255, 255, 255, 0.2);
 `
 
-const ToggleLabel = styled.div`
-  font-size: ${rel(16)};
+const ModalTitle = styled.h2`
+  font-size: ${rel(24)};
+  font-weight: bold;
   color: white;
-  font-weight: 500;
+  margin: 0;
 `
 
-const ToggleSwitch = styled.div<{ active: boolean }>`
+const CloseButton = styled.button`
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 50%;
+  width: ${rel(32)};
+  height: ${rel(32)};
+  color: white;
+  font-size: ${rel(18)};
+  cursor: pointer;
   display: flex;
   align-items: center;
-  cursor: pointer;
+  justify-content: center;
+  transition: background 150ms ease-out;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
 `
 
-const ToggleSwitchTrack = styled.div<{ active?: boolean }>`
-  width: ${rel(42)};
-  height: ${rel(22)};
-  background-color: ${props => props.active ? 'rgba(76, 175, 80, 0.6)' : 'rgba(255, 255, 255, 0.3)'};
-  border-radius: ${rel(11)};
-  position: relative;
-  transition: background-color 150ms ease-out;
+const ModalBody = styled.div`
+  padding: ${rel(24)};
 `
 
-const ToggleSwitchThumb = styled.div<{ active: boolean }>`
-  width: ${rel(18)};
-  height: ${rel(18)};
-  background-color: white;
-  border-radius: 50%;
-  position: absolute;
-  top: 50%;
-  left: ${props => props.active ? `calc(100% - ${rel(20)})` : `${rel(2)}`};
-  transform: translateY(-50%);
-  transition: left 150ms ease-out;
-  box-shadow: 0 ${rel(1)} ${rel(3)} rgba(0, 0, 0, 0.2);
+const GameSection = styled.div`
+  margin-bottom: ${rel(24)};
+
+  &:last-child {
+    margin-bottom: 0;
+  }
 `
 
-const ToggleSwitchLabel = styled.div`
-  font-size: ${rel(14)};
+const SectionTitle = styled.h3`
+  font-size: ${rel(18)};
+  font-weight: 600;
   color: white;
-  margin-left: ${rel(8)};
+  margin: 0 0 ${rel(12)} 0;
+`
+
+const SectionText = styled.p`
+  font-size: ${rel(14)};
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.5;
+  margin: 0;
+`
+
+const StepList = styled.ol`
+  margin: 0;
+  padding: 0;
+  list-style: none;
+`
+
+const StepItem = styled.li`
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: ${rel(12)};
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+`
+
+const StepNumber = styled.div`
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  width: ${rel(24)};
+  height: ${rel(24)};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: ${rel(12)};
+  font-weight: 600;
+  color: white;
+  margin-right: ${rel(12)};
+  flex-shrink: 0;
+`
+
+const StepText = styled.div`
+  font-size: ${rel(14)};
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.4;
+  padding-top: ${rel(2)};
+`
+
+const TipList = styled.ul`
+  margin: 0;
+  padding: 0;
+  list-style: none;
+`
+
+const TipItem = styled.li`
+  font-size: ${rel(14)};
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.4;
+  margin-bottom: ${rel(8)};
+
+  &:last-child {
+    margin-bottom: 0;
+  }
 `
 
 

@@ -3,7 +3,6 @@ import { PlayerId } from "rune-sdk/multiplayer"
 
 export type GameActions = {
   setReadyToStart: () => void
-  toggleBots: () => void  // Toggle bot usage
   submitVote: (vote: {
     suspectId: PlayerId
     round: GameState["round"]

@@ -8,7 +8,6 @@ import {
   $round,
   $currentTurn,
   $playersInfo,
-  $game,
 } from "../../state/$state"
 import { useEffect, memo } from "react"
 import { sounds } from "../../sounds/sounds"
@@ -45,24 +44,16 @@ export const CountdownNew = memo(() => {
   // Find the current describing player
   const describingPlayerId = currentTurn.currentDescriberId
   const playersInfo = useAtomValue($playersInfo)
-  const gameState = useAtomValue($game)
 
-  // Get player info, checking for both human and bot players
+  // Get player info
   let describingPlayer = null
   if (describingPlayerId) {
-    // Check if this is a human player with info
     const playerInfo = playersInfo[describingPlayerId]
 
-    // Check if this is a bot player
-    const gamePlayer = gameState.players.find(p => p.id === describingPlayerId)
-    const isBot = gamePlayer?.isBot || false
-    const botInfo = isBot ? gameState.bots.find(b => b.id === describingPlayerId) : null
-
-    if (playerInfo || botInfo) {
+    if (playerInfo) {
       describingPlayer = {
-        displayName: playerInfo?.displayName || botInfo?.name || 'Player',
-        avatarUrl: playerInfo?.avatarUrl || botInfo?.avatarUrl || '/images/bots/default.svg',
-        isBot: isBot
+        displayName: playerInfo?.displayName || 'Player',
+        avatarUrl: playerInfo?.avatarUrl || '/images/default-avatar.svg'
       }
     }
   }
@@ -75,15 +66,14 @@ export const CountdownNew = memo(() => {
         Round
         <RoundNumber>{round + 1}/{numRounds}</RoundNumber>
       </RoundLabel>
-      
+
       <UpNext>
         {isYourTurn ? (
           <YourTurnLabel>Your Turn!</YourTurnLabel>
         ) : describingPlayer ? (
           <PlayerContainer>
-            <AvatarWrapper isBot={describingPlayer.isBot}>
+            <AvatarWrapper>
               <Avatar src={describingPlayer.avatarUrl} />
-              {describingPlayer.isBot && <BotIndicator>🤖</BotIndicator>}
             </AvatarWrapper>
             <UpNextLabel>
               {describingPlayer.displayName}
@@ -92,7 +82,7 @@ export const CountdownNew = memo(() => {
           </PlayerContainer>
         ) : null}
       </UpNext>
-      
+
       <TimerWrapper>
         <PieTimer
           startedAt={currentTurn.timerStartedAt}
@@ -146,9 +136,9 @@ const PlayerContainer = styled.div`
   gap: ${rel(12)};
 `;
 
-const AvatarWrapper = styled.div<{ isBot: boolean }>`
+const AvatarWrapper = styled.div`
   position: relative;
-  border: ${rel(3)} solid ${props => props.isBot ? '#00bcd4' : '#ffffff'};
+  border: ${rel(3)} solid #ffffff;
   border-radius: 50%;
   padding: ${rel(2)};
   background: linear-gradient(145deg, rgba(255,255,255,0.1), rgba(0,0,0,0.1));
@@ -162,20 +152,7 @@ const Avatar = styled.img`
   animation: ${pulse} 3s infinite ease-in-out;
 `;
 
-const BotIndicator = styled.div`
-  position: absolute;
-  bottom: ${rel(0)};
-  right: ${rel(0)};
-  background: rgba(0, 0, 0, 0.6);
-  border-radius: 50%;
-  width: ${rel(28)};
-  height: ${rel(28)};
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: ${rel(16)};
-  border: ${rel(2)} solid #00bcd4;
-`;
+
 
 const UpNextLabel = styled.div`
   font-size: ${rel(28)};

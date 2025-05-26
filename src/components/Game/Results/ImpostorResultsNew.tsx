@@ -43,16 +43,11 @@ export const ImpostorResultsNew = memo(() => {
   const impostorPlayer = Object.entries(playersInfo)
     .map(([id, info]) => {
       const gamePlayer = gamePlayers.find(p => p.id === id)
-      // Find bot info if this is a bot
-      const isBot = gamePlayer?.isBot || false
-      const botInfo = isBot ? gameState.bots.find(b => b.id === id) : null
 
       return {
         id,
-        // Use info if available, otherwise use bot info
-        displayName: info?.displayName || botInfo?.name || 'Player',
-        avatarUrl: info?.avatarUrl || botInfo?.avatarUrl || '/images/bots/default.svg',
-        isBot: isBot,
+        displayName: info?.displayName || 'Player',
+        avatarUrl: info?.avatarUrl || '/images/default-avatar.svg',
         isImpostor: gamePlayer?.isImpostor || false
       }
     })
@@ -95,7 +90,6 @@ export const ImpostorResultsNew = memo(() => {
         <ImpostorSection>
           <ImpostorAvatar caught={isImpostorCaught}>
             <AvatarImg src={impostorPlayer.avatarUrl} />
-            {impostorPlayer.isBot && <BotIndicator>🤖</BotIndicator>}
           </ImpostorAvatar>
           <ImpostorDetail>
             <ImpostorName>
@@ -202,19 +196,7 @@ const AvatarImg = styled.img`
   border-radius: 50%;
 `
 
-const BotIndicator = styled.div`
-  position: absolute;
-  bottom: ${rel(-5)};
-  right: ${rel(-5)};
-  font-size: ${rel(14)};
-  background: rgba(0, 0, 0, 0.7);
-  border-radius: 50%;
-  width: ${rel(22)};
-  height: ${rel(22)};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`
+
 
 const ImpostorDetail = styled.div`
   display: flex;

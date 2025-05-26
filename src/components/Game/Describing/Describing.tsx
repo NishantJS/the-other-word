@@ -68,20 +68,15 @@ const SpectatingView = memo(() => {
   const describingPlayerId = currentTurn?.currentDescriberId
   const nextDescriberId = currentTurn?.nextDescriberId
   const playersInfo = useAtomValue($playersInfo)
-  const game = useAtomValue($game)
 
-  // Get player info and check if they are bots
+  // Get player info
   let describingPlayer = null
   if (describingPlayerId) {
     const playerInfo = playersInfo[describingPlayerId]
-    const gamePlayer = game.players.find(p => p.id === describingPlayerId)
-    const isBot = gamePlayer?.isBot || false
-    const botInfo = isBot ? game.bots.find(b => b.id === describingPlayerId) : null
 
     describingPlayer = {
-      displayName: playerInfo?.displayName || botInfo?.name || 'Player',
-      avatarUrl: playerInfo?.avatarUrl || botInfo?.avatarUrl || '/images/bots/default.svg',
-      isBot: isBot
+      displayName: playerInfo?.displayName || 'Player',
+      avatarUrl: playerInfo?.avatarUrl || '/images/default-avatar.svg'
     }
   }
 
@@ -107,7 +102,6 @@ const SpectatingView = memo(() => {
             {describingPlayer.displayName}
             <SpeakerStatus>is speaking</SpeakerStatus>
           </PlayerName>
-          {describingPlayer.isBot && <BotBadge>🤖</BotBadge>}
         </SpeakerDisplay>
 
         {/* Concise instructions */}
@@ -340,16 +334,7 @@ const SpeakerStatus = styled.div`
   margin-top: ${rel(4)};
 `
 
-const BotBadge = styled.div`
-  font-size: ${rel(14)};
-  color: #00bcd4;
-  background-color: rgba(0, 0, 0, 0.3);
-  padding: ${rel(2)} ${rel(8)};
-  border-radius: ${rel(10)};
-  margin-top: ${rel(5)};
-  display: flex;
-  align-items: center;
-`
+
 
 const PlayerOrderRow = styled.div`
   display: flex;

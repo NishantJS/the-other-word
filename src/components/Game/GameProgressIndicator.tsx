@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useState } from 'react'
+import { memo, useState } from 'react'
 import styled, { keyframes, css } from 'styled-components/macro'
 import { useAtomValue } from 'jotai'
 import { $game, $currentTurn, $round, $yourPlayer, $playersInfo } from '../../state/$state'
@@ -41,7 +41,7 @@ export const GameProgressIndicator = memo(() => {
       default: return 30
     }
   }
-  
+
   const timerValue = useTimerValue({
     startedAt: currentTurn?.timerStartedAt,
     duration: getStageDuration()
@@ -50,48 +50,40 @@ export const GameProgressIndicator = memo(() => {
   // Get current and next player information
   const getCurrentPlayerInfo = () => {
     if (!currentTurn) return null
-    
+
     const currentId = currentTurn.currentDescriberId
     const nextId = currentTurn.nextDescriberId
-    
+
     if (!currentId) return null
-    
+
     // Get current player info
     const currentPlayerInfo = playersInfo[currentId]
-    const currentGamePlayer = game.players.find(p => p.id === currentId)
-    const currentIsBot = currentGamePlayer?.isBot || false
-    const currentBotInfo = currentIsBot ? game.bots.find(b => b.id === currentId) : null
-    
+
     const currentPlayer = {
       id: currentId,
-      name: currentPlayerInfo?.displayName || currentBotInfo?.name || 'Player',
-      isBot: currentIsBot,
+      name: currentPlayerInfo?.displayName || 'Player',
       isYou: currentId === yourPlayer?.id
     }
-    
+
     // Get next player info if available
     let nextPlayer = null
     if (nextId) {
       const nextPlayerInfo = playersInfo[nextId]
-      const nextGamePlayer = game.players.find(p => p.id === nextId)
-      const nextIsBot = nextGamePlayer?.isBot || false
-      const nextBotInfo = nextIsBot ? game.bots.find(b => b.id === nextId) : null
-      
+
       nextPlayer = {
         id: nextId,
-        name: nextPlayerInfo?.displayName || nextBotInfo?.name || 'Player',
-        isBot: nextIsBot,
+        name: nextPlayerInfo?.displayName || 'Player',
         isYou: nextId === yourPlayer?.id
       }
     }
-    
+
     return { current: currentPlayer, next: nextPlayer }
   }
-  
+
   const playerInfo = getCurrentPlayerInfo()
-  
+
   // Calculate progress using available game state properties
-  const totalPlayers = game.players.filter(p => !p.isBot).length
+  const totalPlayers = game.players.length
   const currentRound = game?.round ?? round
   const progressPercentage = Math.min((currentRound / Math.max(totalPlayers, 1)) * 100, 100)
 
@@ -109,7 +101,7 @@ export const GameProgressIndicator = memo(() => {
   // Get stage-specific information to display
   const getStageInfo = () => {
     if (!currentTurn) return null
-    
+
     switch (currentTurn.stage) {
       case 'countdown':
         return {
@@ -224,7 +216,7 @@ export const GameProgressIndicator = memo(() => {
           <ProgressText>{Math.round(progressPercentage)}%</ProgressText>
         </ProgressBarContainer>
       )}
-      
+
       <MinimizeButton onClick={() => setShowProgress(false)}>
         ⌄
       </MinimizeButton>
@@ -245,7 +237,7 @@ const ProgressContainer = styled.div`
   animation: ${slideIn} 0.5s ease-out;
   border: ${rel(1)} solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 ${rel(4)} ${rel(12)} rgba(0, 0, 0, 0.3);
-  
+
   @media (max-width: 480px) {
     top: ${rel(8)};
     left: ${rel(8)};
@@ -299,7 +291,7 @@ const TimerDisplay = styled.span<{ urgent: boolean }>`
   min-width: ${rel(28)};
   text-align: center;
   flex-shrink: 0;
-  
+
   ${props => props.urgent && css`
     animation: ${urgentPulse} 1s infinite ease-in-out;
   `}
@@ -326,18 +318,14 @@ const LargeTimerDisplay = styled.div<{ urgent: boolean }>`
   font-size: ${rel(32)};
   font-weight: bold;
   text-shadow: 0 ${rel(2)} ${rel(4)} rgba(0, 0, 0, 0.5);
-  
+
   ${props => props.urgent && css`
     animation: ${urgentPulse} 0.5s infinite ease-in-out;
     color: #ff1744;
   `}
 `
 
-const RoundCounter = styled.span`
-  color: #ffcc00;
-  font-size: ${rel(12)};
-  font-weight: bold;
-`
+
 
 const ProgressBarContainer = styled.div`
   display: flex;
@@ -385,7 +373,7 @@ const MinimizeButton = styled.button`
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
-  
+
   &:hover {
     background: rgba(0, 0, 0, 0.8);
     transform: scale(1.1);

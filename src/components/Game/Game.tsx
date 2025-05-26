@@ -226,14 +226,10 @@ const DescribingContent = memo(() => {
   let describingPlayer = null
   if (describingPlayerId) {
     const playerInfo = playersInfo[describingPlayerId]
-    const gamePlayer = game.players.find(p => p.id === describingPlayerId)
-    const isBot = gamePlayer?.isBot || false
-    const botInfo = isBot ? game.bots.find(b => b.id === describingPlayerId) : null
 
     describingPlayer = {
-      displayName: playerInfo?.displayName || botInfo?.name || 'Player',
-      avatarUrl: playerInfo?.avatarUrl || botInfo?.avatarUrl || '/images/bots/default.svg',
-      isBot: isBot
+      displayName: playerInfo?.displayName || 'Player',
+      avatarUrl: playerInfo?.avatarUrl || '/images/default-avatar.svg'
     }
   }
 
@@ -246,7 +242,6 @@ const DescribingContent = memo(() => {
           <SpeakerInfo>
             <SpeakerName>{describingPlayer.displayName}</SpeakerName>
             <SpeakerStatus>is speaking...</SpeakerStatus>
-            {describingPlayer.isBot && <BotBadge>🤖 Bot</BotBadge>}
           </SpeakerInfo>
         </SpeakerCard>
       )}
@@ -267,18 +262,11 @@ const VotingContent = memo(({ selectedPlayerId, setSelectedPlayerId, hasVoted, s
 
   const otherPlayers = Object.entries(playersInfo)
     .filter(([id]) => id !== yourPlayer?.id)
-    .map(([id, info]) => {
-      const playerData = game.players.find(p => p.id === id)
-      const isBot = playerData?.isBot || false
-      const botInfo = isBot ? game.bots.find(b => b.id === id) : null
-
-      return {
-        id,
-        displayName: info?.displayName || botInfo?.name || 'Player',
-        avatarUrl: info?.avatarUrl || botInfo?.avatarUrl || '/images/bots/default.svg',
-        isBot
-      }
-    })
+    .map(([id, info]) => ({
+      id,
+      displayName: info?.displayName || 'Player',
+      avatarUrl: info?.avatarUrl || '/images/default-avatar.svg'
+    }))
 
   const handleVote = () => {
     if (!selectedPlayerId || hasVoted) return
@@ -312,7 +300,6 @@ const VotingContent = memo(({ selectedPlayerId, setSelectedPlayerId, hasVoted, s
           >
             <PlayerAvatar src={player.avatarUrl} />
             <PlayerName>{player.displayName}</PlayerName>
-            {player.isBot && <BotBadge>🤖</BotBadge>}
           </PlayerCard>
         ))}
       </PlayerGrid>
@@ -345,14 +332,11 @@ const ResultsContent = memo(() => {
   const impostorPlayer = Object.entries(playersInfo)
     .map(([id, info]) => {
       const gamePlayer = players.find(p => p.id === id)
-      const isBot = gamePlayer?.isBot || false
-      const botInfo = isBot ? game.bots.find(b => b.id === id) : null
 
       return {
         id,
-        displayName: info?.displayName || botInfo?.name || 'Player',
-        avatarUrl: info?.avatarUrl || botInfo?.avatarUrl || '/images/bots/default.svg',
-        isBot: isBot,
+        displayName: info?.displayName || 'Player',
+        avatarUrl: info?.avatarUrl || '/images/default-avatar.svg',
         isImpostor: gamePlayer?.isImpostor || false
       }
     })
@@ -377,7 +361,6 @@ const ResultsContent = memo(() => {
           <ImpostorStatus caught={!!isImpostorCaught}>
             {isImpostorCaught ? "Caught!" : "Escaped!"}
           </ImpostorStatus>
-          {impostorPlayer.isBot && <BotBadge>🤖</BotBadge>}
         </ImpostorInfo>
       </ImpostorReveal>
 
@@ -636,14 +619,7 @@ const SpeakerStatus = styled.div`
   font-style: italic;
 `
 
-const BotBadge = styled.div`
-  font-size: ${rel(12)};
-  color: #00bcd4;
-  background: rgba(0, 0, 0, 0.3);
-  padding: ${rel(4)} ${rel(8)};
-  border-radius: ${rel(10)};
-  margin-top: ${rel(4)};
-`
+
 
 // Voting Components
 const PlayerGrid = styled.div`

@@ -1,5 +1,5 @@
 import { useAtomValue } from "jotai"
-import { $yourPlayer, $currentTurn, $round, $playersInfo, $game } from "../../../state/$state"
+import { $yourPlayer, $currentTurn, $round, $playersInfo } from "../../../state/$state"
 import styled, { css, keyframes } from "styled-components/macro"
 import { rel } from "../../../style/rel"
 import { memo, useState, useEffect, useRef } from "react"
@@ -185,26 +185,16 @@ export const Voting = memo(() => {
 
   // Get all players except yourself
   const playersInfo = useAtomValue($playersInfo)
-  const game = useAtomValue($game)
   const otherPlayers = Object.entries(playersInfo)
     .filter(([id]) => id !== yourPlayer?.id)
-    .map(([id, info]) => {
-      // Find if this player is a bot
-      const playerData = game.players.find(p => p.id === id)
-      const isBot = playerData?.isBot || false
-      const botInfo = isBot ? game.bots.find(b => b.id === id) : null
-
-      return {
-        id,
-        // Use info if available, otherwise use bot info
-        displayName: info?.displayName || botInfo?.name || 'Player',
-        avatarUrl: info?.avatarUrl || botInfo?.avatarUrl || '/images/bots/default.svg',
-        // Add speaking order information
-        speakingOrder: currentTurn?.descriptionOrder.indexOf(id) ?? -1,
-        hasSpoken: currentTurn?.completedDescribers?.includes(id) ?? false,
-        isBot
-      }
-    })
+    .map(([id, info]) => ({
+      id,
+      displayName: info?.displayName || 'Player',
+      avatarUrl: info?.avatarUrl || '/images/default-avatar.svg',
+      // Add speaking order information
+      speakingOrder: currentTurn?.descriptionOrder.indexOf(id) ?? -1,
+      hasSpoken: currentTurn?.completedDescribers?.includes(id) ?? false
+    }))
 
   // Sort players by speaking order to help with voting
   otherPlayers.sort((a, b) => a.speakingOrder - b.speakingOrder)
@@ -247,7 +237,6 @@ export const Voting = memo(() => {
             <PlayerInfo>
               <PlayerNameRow>
                 <PlayerName>{player.displayName}</PlayerName>
-                {player.isBot && <BotIndicator>🤖 Bot</BotIndicator>}
               </PlayerNameRow>
               <SpeakingInfo>
                 <SpeakingOrder>Speaker #{player.speakingOrder + 1}</SpeakingOrder>
@@ -281,11 +270,7 @@ export const Voting = memo(() => {
               {(() => {
                 // Find the player's display name
                 const playerInfo = playersInfo[selectedPlayerId || ""]
-                const playerData = game.players.find(p => p.id === selectedPlayerId)
-                const isBot = playerData?.isBot || false
-                const botInfo = isBot ? game.bots.find(b => b.id === selectedPlayerId) : null
-
-                return playerInfo?.displayName || botInfo?.name || 'Player'
+                return playerInfo?.displayName || 'Player'
               })()}
             </strong> is locked in
             {autoVoted && <AutoVoteText>(Auto-submitted as time expired)</AutoVoteText>}
@@ -402,16 +387,7 @@ const PlayerName = styled.div`
   color: white;
 `
 
-const BotIndicator = styled.div`
-  font-size: ${rel(12)};
-  color: #00bcd4;
-  background-color: rgba(0, 0, 0, 0.3);
-  padding: ${rel(2)} ${rel(6)};
-  border-radius: ${rel(10)};
-  margin-left: ${rel(8)};
-  display: flex;
-  align-items: center;
-`
+
 
 const SpeakingInfo = styled.div`
   display: flex;
