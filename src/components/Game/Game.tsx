@@ -7,6 +7,7 @@ import { descriptionDuration, votingDuration, resultDuration, turnCountdown } fr
 import { sounds } from "../../sounds/sounds"
 import { EmoteSelector } from "./Describing/EmoteSelector"
 import { Reactions } from "./Describing/Reactions"
+import { PlayerLeavingNotification } from "./PlayerLeavingNotification"
 
 // Enhanced animations
 const fadeIn = keyframes`
@@ -188,6 +189,9 @@ export const Game = memo(() => {
 
         {/* Emote selector for describing stage */}
         {currentTurn.stage === "describing" && <EmoteSelector />}
+
+        {/* Player leaving notification */}
+        <PlayerLeavingNotification />
       </GameContainer>
     </>
   )

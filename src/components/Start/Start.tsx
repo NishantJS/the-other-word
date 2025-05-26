@@ -1,15 +1,17 @@
 import { useAtomValue } from "jotai"
-import { $players, $yourPlayer } from "../../state/$state"
-import { useMemo, memo, useState } from "react"
+import { $players, $yourPlayer, $game } from "../../state/$state"
+import { useMemo, memo, useState, useEffect } from "react"
 import styled from "styled-components/macro"
 
 import logo from "./new-logo.svg"
 import { rel } from "../../style/rel"
+import { PlayerLeavingNotification } from "../Game/PlayerLeavingNotification"
 
 
 export const Start = memo(() => {
   const players = useAtomValue($players)
   const yourPlayer = useAtomValue($yourPlayer)
+  const game = useAtomValue($game)
   const [showHowToPlay, setShowHowToPlay] = useState(false)
 
   const numReady = useMemo(
@@ -17,8 +19,15 @@ export const Start = memo(() => {
     [players]
   )
 
+  const minPlayers = 3
+  const maxPlayers = 6
+  const hasEnoughPlayers = players.length >= minPlayers
+  const canStart = hasEnoughPlayers && numReady === players.length
+
   return (
     <Root>
+      <PlayerLeavingNotification />
+
       <LogoContainer>
         <LogoImg src={logo} />
         <GameTitle>THE OTHER WORD</GameTitle>
@@ -26,8 +35,15 @@ export const Start = memo(() => {
 
       <ContentContainer>
         <PlayerCounter>
-          <PlayerCountValue>{numReady}/{players.length}</PlayerCountValue>
-          <PlayerCountLabel>Players Ready</PlayerCountLabel>
+          <PlayerCountValue hasEnoughPlayers={hasEnoughPlayers}>
+            {players.length}/{maxPlayers}
+          </PlayerCountValue>
+          <PlayerCountLabel>
+            {hasEnoughPlayers ?
+              `${numReady}/${players.length} Players Ready` :
+              `Need ${minPlayers - players.length} more players`
+            }
+          </PlayerCountLabel>
         </PlayerCounter>
 
         <OptionsContainer>
@@ -37,10 +53,14 @@ export const Start = memo(() => {
         </OptionsContainer>
 
         <ReadyButton
-          disabled={yourPlayer && yourPlayer.readyToStart}
+          disabled={(yourPlayer && yourPlayer.readyToStart) || !hasEnoughPlayers}
           onClick={() => Rune.actions.setReadyToStart()}
         >
-          {yourPlayer && yourPlayer.readyToStart ? "Waiting for others..." : "I'm Ready"}        </ReadyButton>
+          {!hasEnoughPlayers ?
+            `Need ${minPlayers - players.length} more players` :
+            (yourPlayer && yourPlayer.readyToStart ? "Waiting for others..." : "I'm Ready")
+          }
+        </ReadyButton>
       </ContentContainer>
 
       {/* How to Play Modal */}
@@ -156,11 +176,12 @@ const PlayerCounter = styled.div`
   margin-bottom: ${rel(30)};
 `
 
-const PlayerCountValue = styled.div`
+const PlayerCountValue = styled.div<{ hasEnoughPlayers?: boolean }>`
   font-size: ${rel(36)};
   font-weight: bold;
-  color: white;
+  color: ${props => props.hasEnoughPlayers ? 'white' : '#ffab91'};
   text-shadow: 0 ${rel(2)} ${rel(4)} rgba(0, 0, 0, 0.3);
+  transition: color 0.3s ease;
 `
 
 const PlayerCountLabel = styled.div`

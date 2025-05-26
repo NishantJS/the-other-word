@@ -58,6 +58,14 @@ export type Reaction = {
   timestamp: number
 }
 
+export type PlayerLeavingNotification = {
+  playerId: PlayerId
+  wasImpostor: boolean
+  wasCurrentDescriber: boolean
+  gameStage: string
+  timestamp: number
+}
+
 type Score = {
   nonImpostor: number  // Points earned as a non-impostor
   impostor: number     // Points earned as an impostor
@@ -112,4 +120,5 @@ export interface GameState {
   reactions: Reaction[]  // Reactions from players during the describing phase
   gameOver: boolean
   winningTeam: "nonImpostors" | "impostor" | null  // Who won the game
+  playerLeavingNotification?: PlayerLeavingNotification  // Notification when a player leaves
 }

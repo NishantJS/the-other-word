@@ -322,6 +322,99 @@ function reportGameOver(game: GameState): void {
   })
 }
 
+// Helper function to reset game to start screen
+function resetGameToStart(game: GameState): void {
+  // Reset all game state to initial values
+  game.gameStarted = false
+  game.round = 0
+  game.currentWord = ""
+  game.impostorWord = ""
+  game.currentTurn = null
+  game.votes = []
+  game.reactions = []
+  game.gameOver = false
+  game.winningTeam = null
+
+  // Reset all players to not ready
+  game.players.forEach(player => {
+    player.readyToStart = false
+    player.describing = false
+    player.isImpostor = false
+    player.secretWord = ""
+    player.voted = false
+    player.latestScore = 0
+    // Keep accumulated scores but reset round-specific data
+    if (!player.latestRoundScore) {
+      player.latestRoundScore = { acting: 0, guessing: 0 }
+    }
+    player.latestRoundScore.acting = 0
+    player.latestRoundScore.guessing = 0
+  })
+
+  // Update persisted scores before reset
+  updatePersistedScores(game)
+}
+
+// Helper function to handle player leaving during active game
+function handlePlayerLeavingDuringGame(game: GameState, playerId: PlayerId, wasCurrentDescriber: boolean, gameStage: string): void {
+  if (!game.currentTurn) return
+
+  switch (gameStage) {
+    case "countdown":
+      // During countdown, just wait for timer to complete
+      break
+
+    case "describing":
+      // Remove player from description order
+      game.currentTurn.descriptionOrder = game.currentTurn.descriptionOrder.filter(
+        id => id !== playerId
+      )
+
+      // If the leaving player was the current describer, move to next
+      if (wasCurrentDescriber) {
+        moveToNextDescriber(game)
+      } else {
+        // Update next/previous describer references if they were the leaving player
+        if (game.currentTurn.nextDescriberId === playerId) {
+          // Find the next player after the leaving one
+          const currentDescriberId = game.currentTurn.currentDescriberId
+          if (currentDescriberId) {
+            const currentIndex = game.currentTurn.descriptionOrder.indexOf(currentDescriberId)
+            let nextNextPlayerId: PlayerId | null = null
+            for (let i = currentIndex + 1; i < game.currentTurn.descriptionOrder.length; i++) {
+              const candidateId = game.currentTurn.descriptionOrder[i]
+              if (!game.currentTurn.completedDescribers?.includes(candidateId)) {
+                nextNextPlayerId = candidateId
+                break
+              }
+            }
+            game.currentTurn.nextDescriberId = nextNextPlayerId
+          }
+        }
+      }
+      break
+
+    case "voting":
+      // Remove any votes cast by the leaving player
+      game.votes = game.votes.filter(vote => vote.voterId !== playerId)
+
+      // Check if all remaining players have voted
+      const remainingPlayersWhoVoted = game.players.filter(p => p.voted).length
+      const totalRemainingPlayers = game.players.length
+
+      if (remainingPlayersWhoVoted === totalRemainingPlayers) {
+        // All remaining players have voted, complete voting
+        completeVoting(game)
+      }
+      break
+
+    case "result":
+      // During results, no special handling needed
+      // The timer will continue and players can proceed to next round
+      break
+  }
+}
+
 // Helper function to move to the next player for describing
 function moveToNextDescriber(game: GameState): void {
   if (!game.currentTurn) return
@@ -569,6 +662,10 @@ Rune.initLogic({
         game.reactions = game.reactions.slice(-20)
       }
     },
+    clearPlayerLeavingNotification: (_, { game }) => {
+      // Clear the player leaving notification
+      game.playerLeavingNotification = undefined
+    },
   },
   events: {
     playerJoined: (playerId, { game }) => {
@@ -576,6 +673,12 @@ Rune.initLogic({
       loadPersistedScores(game, playerId);
     },
     playerLeft: (playerId, { game }) => {
+      // Store player info for notification before removing
+      const leavingPlayer = game.players.find(p => p.id === playerId)
+      const wasImpostor = leavingPlayer?.isImpostor || false
+      const wasCurrentDescriber = game.currentTurn?.currentDescriberId === playerId
+      const gameStage = game.currentTurn?.stage || "none"
+
       // Remove the player
       game.players = game.players.filter((player) => player.id !== playerId)
 
@@ -584,14 +687,33 @@ Rune.initLogic({
         game.currentTurn.remainingPlayers = game.players.length
       }
 
-      // Check if the game can continue
-      if (game.players.length < 3) {
-        // Not enough players to continue
+      // Add player leaving notification to game state
+      if (!game.playerLeavingNotification) {
+        game.playerLeavingNotification = {
+          playerId,
+          wasImpostor,
+          wasCurrentDescriber,
+          gameStage,
+          timestamp: Rune.gameTime() / 1000
+        }
+      }
+
+      // Handle different scenarios based on game state and remaining players
+      const shouldEndGame = game.players.length < 3
+      const shouldReturnToStart = shouldEndGame && (gameStage === "voting" || gameStage === "result")
+
+      if (shouldReturnToStart) {
+        // Return to start screen for new game setup
+        resetGameToStart(game)
+        return
+      }
+
+      if (shouldEndGame) {
+        // Not enough players to continue - end the game
         game.gameOver = true
 
         // If the impostor left, non-impostors win
-        const impostorLeft = !game.players.some(p => p.isImpostor)
-        if (impostorLeft) {
+        if (wasImpostor) {
           game.winningTeam = "nonImpostors"
 
           // Award points to non-impostors
@@ -631,36 +753,31 @@ Rune.initLogic({
         updatePersistedScores(game)
 
         // Report game over to Rune
-        if (game.gameOver) {
-          reportGameOver(game)
-        }
+        reportGameOver(game)
+        return
       }
 
-      // If the current describer left, move to the next player
-      if (
-        game.currentTurn &&
-        game.currentTurn.stage === "describing" &&
-        game.currentTurn.currentDescriberId === playerId
-      ) {
-        // Remove the player from the description order
-        game.currentTurn.descriptionOrder = game.currentTurn.descriptionOrder.filter(
-          id => id !== playerId
-        )
+      // Handle player leaving during specific game stages
+      handlePlayerLeavingDuringGame(game, playerId, wasCurrentDescriber, gameStage)
 
-        // Move to the next player
-        moveToNextDescriber(game)
+      // Check if we need to start the game (for pre-game state)
+      if (!game.gameStarted) {
+        startGameCheck(game)
       }
-
-      // Check if we need to start the game
-      startGameCheck(game)
     },
   },
 
 
   update: ({ game }) => {
-    if (!game.currentTurn) return
-
     const currentTime = Rune.gameTime() / 1000
+
+    // Auto-clear player leaving notification after 5 seconds
+    if (game.playerLeavingNotification &&
+        currentTime - game.playerLeavingNotification.timestamp > 5) {
+      game.playerLeavingNotification = undefined
+    }
+
+    if (!game.currentTurn) return
 
     switch (game.currentTurn.stage) {
       case "countdown":

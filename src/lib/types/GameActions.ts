@@ -12,4 +12,5 @@ export type GameActions = {
   sendReaction: (reaction: {
     emoji: string
   }) => void
+  clearPlayerLeavingNotification: () => void
 }
