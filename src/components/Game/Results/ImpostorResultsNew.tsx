@@ -1,6 +1,6 @@
 import { useAtomValue } from "jotai"
 import { $currentTurn, $gameOver, $yourPlayerId, $playersInfo, $game, $players } from "../../../state/$state"
-import styled, { css, keyframes } from "styled-components/macro"
+import styled, { keyframes } from "styled-components/macro"
 import { rel } from "../../../style/rel"
 import { memo, useEffect } from "react"
 import { sounds } from "../../../sounds/sounds"
@@ -65,7 +65,7 @@ export const ImpostorResultsNew = memo(() => {
 
   // Shortened versions of the result messages
   const resultMessage = isImpostorCaught
-    ? isYouImpostor 
+    ? isYouImpostor
       ? "You were discovered!"
       : "Impostor found!"
     : isYouImpostor
@@ -74,16 +74,16 @@ export const ImpostorResultsNew = memo(() => {
 
   // Shortened versions of the game over messages
   const gameOverMessage = isImpostorCaught
-    ? isYouImpostor 
-      ? "Team Wins" 
+    ? isYouImpostor
+      ? "Team Wins"
       : "Your Team Wins"
-    : isYouImpostor 
-      ? "You Win" 
+    : isYouImpostor
+      ? "You Win"
       : "Impostor Wins";
 
   // Icon based on result
   const resultIcon = isImpostorCaught ? "👁️‍🗨️" : "🎭";
-  
+
   return (
     <Root>
       {/* Main result card containing everything */}
@@ -91,7 +91,7 @@ export const ImpostorResultsNew = memo(() => {
         <ResultHeading caught={isImpostorCaught}>
           {resultIcon} {resultMessage}
         </ResultHeading>
-        
+
         <ImpostorSection>
           <ImpostorAvatar caught={isImpostorCaught}>
             <AvatarImg src={impostorPlayer.avatarUrl} />
@@ -106,22 +106,22 @@ export const ImpostorResultsNew = memo(() => {
             </ImpostorTag>
           </ImpostorDetail>
         </ImpostorSection>
-        
+
         <WordsSection>
           <WordColumn>
             <WordLabel>Team Word</WordLabel>
             <WordValue>{gameState.currentWord}</WordValue>
           </WordColumn>
-          
+
           <WordDivider>vs</WordDivider>
-          
+
           <WordColumn>
             <WordLabel>Impostor Word</WordLabel>
             <WordValue>{gameState.impostorWord}</WordValue>
           </WordColumn>
         </WordsSection>
       </ResultCard>
-      
+
       {/* Game over state */}
       {gameOver ? (
         <OutcomeSection>
@@ -292,9 +292,9 @@ const GameOverBadge = styled.div<{ caught: boolean }>`
 `
 
 const ActionButton = styled.button<{ primary?: boolean }>`
-  background: ${props => props.primary 
-    ? 'linear-gradient(to bottom, #6e35ab, #5c2d91)' 
-    : 'linear-gradient(to bottom, #2d8091, #1a6275)'};
+  background: ${props => props.primary
+    ? 'linear-gradient(135deg, #ff6b6b, #ee5a24)'
+    : 'linear-gradient(135deg, #00bcd4, #0097a7)'};
   color: white;
   font-size: ${props => props.primary ? rel(18) : rel(16)};
   font-weight: bold;
@@ -306,11 +306,18 @@ const ActionButton = styled.button<{ primary?: boolean }>`
   transition: transform 0.1s ease-in-out, background 0.2s;
   animation: ${fadeInUp} 0.9s forwards;
 
+  &:hover {
+    background: ${props => props.primary
+      ? 'linear-gradient(135deg, #ff8a80, #ff7043)'
+      : 'linear-gradient(135deg, #26c6da, #00acc1)'};
+    transform: translateY(-${rel(1)});
+  }
+
   &:active {
     transform: translateY(${rel(2)});
-    background: ${props => props.primary 
-      ? 'linear-gradient(to bottom, #5c2d91, #4e2678)' 
-      : 'linear-gradient(to bottom, #1a6275, #0d4e61)'};
+    background: ${props => props.primary
+      ? 'linear-gradient(135deg, #ff5722, #e64a19)'
+      : 'linear-gradient(135deg, #0097a7, #00838f)'};
     box-shadow: 0 ${rel(2)} ${rel(4)} rgba(0, 0, 0, 0.3);
   }
 `

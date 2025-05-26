@@ -93,22 +93,9 @@ const Root = styled.div`
   align-items: center;
   justify-content: space-between;
   padding: 4vh 0;
-  background: linear-gradient(180deg, #5f3dc4 0%, #462297 50%, #311b92 100%);
+  background: transparent;
   position: relative;
   height: 100%;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: radial-gradient(circle at 25% 25%, rgba(255,255,255,0.1) 0%, transparent 40%),
-                radial-gradient(circle at 75% 75%, rgba(255,255,255,0.05) 0%, transparent 40%);
-    pointer-events: none;
-    z-index: 0;
-  }
 
   > * {
     position: relative;
@@ -251,8 +238,8 @@ export const ReadyButton = styled.button<{ disabled?: boolean }>`
   width: 85%;
   max-width: ${rel(336)};
   background: ${props => props.disabled ?
-    'linear-gradient(180deg, #5e35b1 0%, #4527a0 100%)' :
-    'linear-gradient(180deg, #8e24aa 0%, #6a1b9a 100%)'};
+    'linear-gradient(135deg, #666666 0%, #555555 100%)' :
+    'linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%)'};
   border: none;
   border-radius: ${rel(12)};
   color: white;
@@ -264,16 +251,19 @@ export const ReadyButton = styled.button<{ disabled?: boolean }>`
   opacity: ${props => props.disabled ? 0.7 : 1};
   box-shadow: ${props => props.disabled ?
     'none' :
-    `0 ${rel(4)} ${rel(12)} rgba(0, 0, 0, 0.3)`};
+    `0 ${rel(4)} ${rel(12)} rgba(255, 107, 107, 0.4)`};
   transition: all 150ms ease-out;
   text-transform: uppercase;
   letter-spacing: ${rel(1)};
 
   &:hover {
     background: ${props => props.disabled ?
-      'linear-gradient(180deg, #5e35b1 0%, #4527a0 100%)' :
-      'linear-gradient(180deg, #9c27b0 0%, #7b1fa2 100%)'};
+      'linear-gradient(135deg, #666666 0%, #555555 100%)' :
+      'linear-gradient(135deg, #ff8a80 0%, #ff7043 100%)'};
     transform: ${props => props.disabled ? 'none' : `translateY(${rel(-2)})`};
+    box-shadow: ${props => props.disabled ?
+      'none' :
+      `0 ${rel(6)} ${rel(16)} rgba(255, 107, 107, 0.6)`};
   }
 
   &:active {

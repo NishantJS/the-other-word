@@ -410,23 +410,11 @@ const ResultsContent = memo(() => {
 const GameContainer = styled.div`
   display: flex;
   flex-direction: column;
+  width: 100%;
   height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: transparent;
   position: relative;
   overflow: hidden;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: radial-gradient(circle at 25% 25%, rgba(255,255,255,0.1) 0%, transparent 40%),
-                radial-gradient(circle at 75% 75%, rgba(255,255,255,0.05) 0%, transparent 40%);
-    pointer-events: none;
-    z-index: 0;
-  }
 `
 
 const TopHeader = styled.div`
@@ -438,6 +426,8 @@ const TopHeader = styled.div`
   padding: ${rel(16)} ${rel(20)};
   background: rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(${rel(10)});
+  width: 100%;
+  box-sizing: border-box;
 `
 
 const MainContent = styled.div`
@@ -454,11 +444,11 @@ const MainContent = styled.div`
 // Timer Components
 const TimerContainer = styled.div`
   position: relative;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.3);
   border-radius: ${rel(20)};
   padding: ${rel(12)} ${rel(16)};
   backdrop-filter: blur(${rel(10)});
-  border: ${rel(1)} solid rgba(255, 255, 255, 0.2);
+  border: ${rel(1)} solid rgba(255, 255, 255, 0.3);
   min-width: ${rel(140)};
 `
 
@@ -468,10 +458,10 @@ const TimerProgress = styled.div<{ progress: number; color: string; almostOver: 
   left: 0;
   height: 100%;
   width: ${props => props.progress}%;
-  background: ${props => props.almostOver ? '#ff4444' : props.color};
+  background: ${props => props.almostOver ? '#ff4444' : '#4ecdc4'};
   border-radius: ${rel(20)};
   transition: width 0.1s linear, background 0.3s ease;
-  opacity: 0.3;
+  opacity: 0.6;
   animation: ${props => props.almostOver ? css`${pulse} 0.5s infinite` : 'none'};
 `
 
@@ -509,12 +499,13 @@ const TimeDisplay = styled.div<{ almostOver: boolean }>`
 const YourWord = styled.div<{ isImpostor: boolean }>`
   background: ${props => props.isImpostor
     ? 'linear-gradient(135deg, #ff6b6b, #ee5a24)'
-    : 'linear-gradient(135deg, #4ecdc4, #44a08d)'};
+    : 'linear-gradient(135deg, #00bcd4, #0097a7)'};
   border-radius: ${rel(16)};
   padding: ${rel(12)} ${rel(16)};
   backdrop-filter: blur(${rel(10)});
-  border: ${rel(1)} solid rgba(255, 255, 255, 0.2);
+  border: ${rel(2)} solid rgba(255, 255, 255, 0.4);
   text-align: center;
+  box-shadow: 0 ${rel(4)} ${rel(12)} rgba(0, 0, 0, 0.3);
   animation: ${props => props.isImpostor ? css`${glow} 0.5s ease-out` : css`${fadeIn} 0.5s ease-out`};
 `
 
@@ -669,21 +660,22 @@ const PlayerCard = styled.div<{ selected: boolean; disabled: boolean }>`
   align-items: center;
   padding: ${rel(16)};
   background: ${props =>
-    props.selected ? 'rgba(255, 107, 107, 0.3)' : 'rgba(255, 255, 255, 0.1)'};
+    props.selected ? 'rgba(255, 107, 107, 0.4)' : 'rgba(0, 0, 0, 0.3)'};
   border: ${rel(2)} solid ${props =>
-    props.selected ? '#ff6b6b' : 'rgba(255, 255, 255, 0.2)'};
+    props.selected ? '#ff6b6b' : 'rgba(255, 255, 255, 0.3)'};
   border-radius: ${rel(16)};
   cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
   transition: all 0.3s ease;
   backdrop-filter: blur(${rel(10)});
   opacity: ${props => props.disabled ? 0.7 : 1};
   animation: ${css`${fadeIn} 0.6s ease-out`};
+  box-shadow: 0 ${rel(4)} ${rel(8)} rgba(0, 0, 0, 0.2);
 
   &:hover {
     ${props => !props.disabled && `
       transform: translateY(-${rel(4)});
-      box-shadow: 0 ${rel(8)} ${rel(16)} rgba(0, 0, 0, 0.2);
-      background: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 ${rel(8)} ${rel(16)} rgba(0, 0, 0, 0.3);
+      background: ${props.selected ? 'rgba(255, 107, 107, 0.5)' : 'rgba(0, 0, 0, 0.4)'};
     `}
   }
 
@@ -728,14 +720,15 @@ const ImpostorReveal = styled.div<{ caught: boolean }>`
   align-items: center;
   gap: ${rel(16)};
   background: ${props => props.caught
-    ? 'rgba(255, 193, 7, 0.1)'
-    : 'rgba(0, 204, 187, 0.1)'};
+    ? 'rgba(255, 193, 7, 0.2)'
+    : 'rgba(0, 204, 187, 0.2)'};
   border: ${rel(2)} solid ${props => props.caught
-    ? 'rgba(255, 193, 7, 0.3)'
-    : 'rgba(0, 204, 187, 0.3)'};
+    ? 'rgba(255, 193, 7, 0.6)'
+    : 'rgba(0, 204, 187, 0.6)'};
   border-radius: ${rel(20)};
   padding: ${rel(20)};
   backdrop-filter: blur(${rel(10)});
+  box-shadow: 0 ${rel(4)} ${rel(12)} rgba(0, 0, 0, 0.3);
   animation: ${css`${fadeIn} 0.8s ease-out`};
 `
 

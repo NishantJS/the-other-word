@@ -39,21 +39,21 @@ export const Describing = memo(() => {
     <Root>
       {/* Reactions from other players */}
       <Reactions />
-      
+
       {/* Main content area with instructions */}
       <ContentArea>
         <SecretWord>{yourPlayer.secretWord}</SecretWord>
-        
+
         <CompactInstructions>
           <Instruction>Describe this word clearly</Instruction>
           <Instruction>Don't be too specific!</Instruction>
         </CompactInstructions>
-        
+
         <FinishButton onClick={() => Rune.actions?.finishDescribing?.()}>
           I'm Done
         </FinishButton>
       </ContentArea>
-      
+
       {/* Emote selector for reactions */}
       <EmoteSelector />
     </Root>
@@ -90,7 +90,7 @@ const SpectatingView = memo(() => {
 
   if (!describingPlayer) return null
   return (
-    <Root>
+    <SpectatingRoot>
       {/* Show status indicators in corner - NO IMPOSTOR REVEAL */}
       {isNextPlayer && (
         <NextPlayerAlert>
@@ -98,24 +98,28 @@ const SpectatingView = memo(() => {
           You're next!
         </NextPlayerAlert>
       )}
-      
-      {/* Simplified speaker info */}<SpeakerDisplay>
-        <AvatarImg src={describingPlayer.avatarUrl} />
-        <PlayerName>
-          {describingPlayer.displayName}
-          <SpeakerStatus>is speaking</SpeakerStatus>
-        </PlayerName>
-        {describingPlayer.isBot && <BotBadge>🤖</BotBadge>}
-      </SpeakerDisplay>
+
+      <SpectatingContent>
+        {/* Simplified speaker info */}
+        <SpeakerDisplay>
+          <AvatarImg src={describingPlayer.avatarUrl} />
+          <PlayerName>
+            {describingPlayer.displayName}
+            <SpeakerStatus>is speaking</SpeakerStatus>
+          </PlayerName>
+          {describingPlayer.isBot && <BotBadge>🤖</BotBadge>}
+        </SpeakerDisplay>
+
         {/* Concise instructions */}
-      <CompactInstructions>
-        <Instruction>Listen carefully for inconsistencies</Instruction>
-        <Instruction>Can you identify the impostor?</Instruction>
-      </CompactInstructions>
-      
+        <CompactInstructions>
+          <Instruction>Listen carefully for inconsistencies</Instruction>
+          <Instruction>Can you identify the impostor?</Instruction>
+        </CompactInstructions>
+      </SpectatingContent>
+
       {/* Emote selector for reactions */}
       <EmoteSelector />
-    </Root>
+    </SpectatingRoot>
   )
 })
 
@@ -127,6 +131,24 @@ const Root = styled.div`
   height: 100%;
   position: relative;
   overflow: hidden;
+`
+
+const SpectatingRoot = styled.div`
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+`
+
+const SpectatingContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: ${rel(20)};
+  gap: ${rel(20)};
 `
 
 const WordChip = styled.div`
@@ -184,7 +206,7 @@ const SecretWord = styled.div`
   border: ${rel(2)} solid rgba(255, 255, 255, 0.3);
   position: relative;
   overflow: hidden;
-  
+
   &::before {
     content: '';
     position: absolute;
@@ -201,7 +223,7 @@ const SecretWord = styled.div`
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
   }
-  
+
   @keyframes shine {
     0% { left: -100%; }
     100% { left: 100%; }
@@ -225,7 +247,7 @@ const Instruction = styled.p`
 `
 
 const FinishButton = styled.button`
-  background: linear-gradient(145deg, #4caf50, #45a049, #3d8b40);
+  background: linear-gradient(135deg, #00bcd4, #0097a7);
   background-size: 200% 200%;
   color: white;
   font-size: ${rel(24)};
@@ -233,7 +255,7 @@ const FinishButton = styled.button`
   padding: ${rel(14)} ${rel(28)};
   border-radius: ${rel(16)};
   border: none;
-  box-shadow: 0 ${rel(6)} ${rel(16)} rgba(76, 175, 80, 0.4);
+  box-shadow: 0 ${rel(6)} ${rel(16)} rgba(0, 188, 212, 0.4);
   cursor: pointer;
   margin-top: ${rel(24)};
   transition: all 0.3s ease;
@@ -244,15 +266,15 @@ const FinishButton = styled.button`
 
   &:hover {
     transform: translateY(-${rel(2)});
-    box-shadow: 0 ${rel(8)} ${rel(20)} rgba(76, 175, 80, 0.6);
-    background-position: 100% 100%;
+    box-shadow: 0 ${rel(8)} ${rel(20)} rgba(0, 188, 212, 0.6);
+    background: linear-gradient(135deg, #26c6da, #00acc1);
   }
 
   &:active {
     transform: translateY(${rel(1)});
-    box-shadow: 0 ${rel(4)} ${rel(12)} rgba(76, 175, 80, 0.4);
+    box-shadow: 0 ${rel(4)} ${rel(12)} rgba(0, 188, 212, 0.4);
   }
-  
+
   &::before {
     content: '✓';
     position: absolute;
@@ -260,7 +282,7 @@ const FinishButton = styled.button`
     opacity: 0;
     transition: opacity 0.3s ease;
   }
-  
+
   &:hover::before {
     opacity: 1;
   }
@@ -292,7 +314,6 @@ const SpeakerDisplay = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: ${rel(60)};
   animation: ${fadeIn} 0.5s ease-out;
 `
 
