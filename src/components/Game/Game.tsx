@@ -447,7 +447,7 @@ const TimerProgress = styled.div<{ progress: number; color: string; almostOver: 
   width: ${props => props.progress}%;
   background: ${props => props.almostOver ? '#ff4444' : '#4ecdc4'};
   border-radius: ${rel(20)};
-  transition: width 0.1s linear, background 0.3s ease;
+  transition: width 0.1s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;
   opacity: 0.6;
   animation: ${props => props.almostOver ? css`${pulse} 0.5s infinite` : 'none'};
 `
@@ -480,6 +480,7 @@ const TimeDisplay = styled.div<{ almostOver: boolean }>`
   font-size: ${rel(16)};
   font-weight: bold;
   color: ${props => props.almostOver ? '#ff4444' : 'white'};
+  transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 `
 
 // Word Display Components

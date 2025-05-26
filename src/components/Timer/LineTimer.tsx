@@ -64,6 +64,8 @@ const Value = styled.div<{ actor: boolean; almostOver: boolean }>`
   background: ${({ almostOver, actor }) =>
     almostOver ? "#FFC531" : actor ? "#31ff6b" : "#FFBFD6"};
   height: 100%;
+  transition: width 0.1s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;
+  border-radius: ${rel(24)};
 `
 
 const Clock = styled.div`

@@ -291,9 +291,11 @@ const TimerDisplay = styled.span<{ urgent: boolean }>`
   min-width: ${rel(28)};
   text-align: center;
   flex-shrink: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   ${props => props.urgent && css`
     animation: ${urgentPulse} 1s infinite ease-in-out;
+    transform: scale(1.05);
   `}
 `
 
@@ -318,10 +320,12 @@ const LargeTimerDisplay = styled.div<{ urgent: boolean }>`
   font-size: ${rel(32)};
   font-weight: bold;
   text-shadow: 0 ${rel(2)} ${rel(4)} rgba(0, 0, 0, 0.5);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   ${props => props.urgent && css`
     animation: ${urgentPulse} 0.5s infinite ease-in-out;
     color: #ff1744;
+    transform: scale(1.1);
   `}
 `
 

@@ -1,4 +1,4 @@
-# Word Impostor
+# The Other Word
 
 Can you spot the impostor? One player gets a slightly different word, and others must identify them through descriptions and voting.
 

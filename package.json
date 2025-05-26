@@ -42,7 +42,7 @@
     "dev:logic": "rollup -c --watch",
     "build": "rollup -c",
     "build:full": "cross-env DISABLE_ESLINT_PLUGIN=true GENERATE_SOURCEMAP=false react-scripts build && rollup -c",
-    "deploy": "../../scripts/copy-assets.sh the-other-word && yarn build && rune upload build",
+    "deploy": "yarn build && rune upload build",
     "lint": "echo 'Linting disabled'",
     "typecheck": "tsc --noEmit"
   },
