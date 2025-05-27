@@ -54,7 +54,10 @@ export const EmoteSelector = memo(() => {
               {emoji}
             </EmoteButton>
           ))}
-          <CloseButton onClick={handleToggle}>✕</CloseButton>
+          <CloseButton onClick={() => {
+            sounds.uiClick.play()
+            handleToggle()
+          }}>✕</CloseButton>
         </EmoteGrid>
       ) : (
         <ToggleButton onClick={handleToggle} disabled={cooldown}>

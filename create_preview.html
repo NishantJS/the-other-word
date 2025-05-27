@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Other Word - Preview Generator</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        #canvas {
+            border: 1px solid #ccc;
+            background: white;
+        }
+        .controls {
+            margin-top: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            background: #007cba;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #005a87;
+        }
+    </style>
+</head>
+<body>
+    <h1>The Other Word - Preview Image Generator</h1>
+    <canvas id="canvas" width="686" height="960"></canvas>
+
+    <div class="controls">
+        <button onclick="generatePreview()">Generate Preview</button>
+        <button onclick="downloadImage()">Download PNG</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        function generatePreview() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Save context state
+            ctx.save();
+
+            // Create smooth gradient from funky top to clean bottom
+            const bgGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            bgGradient.addColorStop(0, '#2a2a4e');      // Funky top
+            bgGradient.addColorStop(0.2, '#1a1a2e');   // Rich middle-top
+            bgGradient.addColorStop(0.5, '#16213e');   // Transition
+            bgGradient.addColorStop(0.75, '#0f3460');  // Start getting cleaner
+            bgGradient.addColorStop(1, '#0a2040');     // Clean bottom for text
+
+            ctx.fillStyle = bgGradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Restore context state
+            ctx.restore();
+
+            // Add sophisticated geometric patterns (top-focused)
+            addSophisticatedPatterns();
+
+            // Add atmospheric particles/stars (concentrated at top)
+            addAtmosphericElements();
+
+            // Add dramatic lighting effects (top-focused)
+            addLightingEffects();
+
+            // Draw enhanced central eye (main focal point)
+            drawEnhancedCentralEye();
+
+            // Draw more attractive player silhouettes
+            drawEnhancedPlayerSilhouettes();
+
+            // Add floating words and mystery elements (top-focused)
+            addEnhancedMysteryElements();
+
+            // Add final glow effects (top-focused)
+            addFinalGlowEffects();
+        }
+
+        function addAtmosphericElements() {
+            // Add floating particles/stars concentrated at top, fading towards bottom
+            const particles = [];
+            for (let i = 0; i < 60; i++) {
+                const y = Math.random() * canvas.height;
+                // More particles at top, fewer at bottom
+                const topWeight = Math.pow(1 - (y / canvas.height), 2);
+
+                if (Math.random() < topWeight || y < 600) {
+                    particles.push({
+                        x: Math.random() * canvas.width,
+                        y: y,
+                        size: Math.random() * 3 + 1,
+                        opacity: (Math.random() * 0.5 + 0.1) * (1 - y / canvas.height * 0.7) // Fade opacity towards bottom
+                    });
+                }
+            }
+
+            particles.forEach(particle => {
+                ctx.fillStyle = `rgba(255, 255, 255, ${particle.opacity})`;
+                ctx.beginPath();
+                ctx.arc(particle.x, particle.y, particle.size, 0, 2 * Math.PI);
+                ctx.fill();
+            });
+        }
+
+        function addLightingEffects() {
+            // Add dramatic spotlight effect concentrated at top
+            const spotlightGradient = ctx.createRadialGradient(canvas.width/2, 0, 0, canvas.width/2, 500, 500);
+            spotlightGradient.addColorStop(0, 'rgba(255, 255, 255, 0.2)');
+            spotlightGradient.addColorStop(0.4, 'rgba(255, 255, 255, 0.1)');
+            spotlightGradient.addColorStop(0.7, 'rgba(255, 255, 255, 0.05)');
+            spotlightGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+            ctx.fillStyle = spotlightGradient;
+            ctx.fillRect(0, 0, canvas.width, 600); // Only cover top portion
+        }
+
+        function drawEnhancedCentralEye() {
+            const centerX = canvas.width / 2;
+            const centerY = 280; // Well above the 720px line
+
+            // Multiple glow layers for depth - MUCH LARGER
+            for (let i = 4; i >= 1; i--) {
+                const glowGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 60 * i);
+                glowGradient.addColorStop(0, `rgba(255, 107, 107, ${0.25 / i})`);
+                glowGradient.addColorStop(1, 'rgba(255, 107, 107, 0)');
+
+                ctx.fillStyle = glowGradient;
+                ctx.fillRect(centerX - 60 * i, centerY - 60 * i, 120 * i, 120 * i);
+            }
+
+            // Eye white/sclera with gradient - MUCH LARGER
+            const scleraGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 100);
+            scleraGradient.addColorStop(0, 'rgba(240, 240, 255, 0.95)');
+            scleraGradient.addColorStop(1, 'rgba(200, 200, 220, 0.8)');
+
+            ctx.fillStyle = scleraGradient;
+            ctx.beginPath();
+            ctx.ellipse(centerX, centerY, 100, 60, 0, 0, 2 * Math.PI); // Much larger
+            ctx.fill();
+
+            // Eye outline with double stroke - THICKER
+            ctx.strokeStyle = '#ff6b6b';
+            ctx.lineWidth = 8;
+            ctx.beginPath();
+            ctx.ellipse(centerX, centerY, 100, 60, 0, 0, 2 * Math.PI);
+            ctx.stroke();
+
+            ctx.strokeStyle = '#ff8a8a';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.ellipse(centerX, centerY, 100, 60, 0, 0, 2 * Math.PI);
+            ctx.stroke();
+
+            // Iris with complex gradient - LARGER
+            const irisGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 35);
+            irisGradient.addColorStop(0, '#ff4444');
+            irisGradient.addColorStop(0.3, '#ff6b6b');
+            irisGradient.addColorStop(0.7, '#ee5a24');
+            irisGradient.addColorStop(1, '#cc4400');
+
+            ctx.fillStyle = irisGradient;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 35, 0, 2 * Math.PI); // Larger iris
+            ctx.fill();
+
+            // Pupil with depth - LARGER
+            const pupilGradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 18);
+            pupilGradient.addColorStop(0, '#000000');
+            pupilGradient.addColorStop(1, '#1a1a1a');
+
+            ctx.fillStyle = pupilGradient;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 18, 0, 2 * Math.PI); // Larger pupil
+            ctx.fill();
+
+            // Multiple highlights for realism - LARGER
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.beginPath();
+            ctx.arc(centerX - 12, centerY - 12, 8, 0, 2 * Math.PI); // Larger highlight
+            ctx.fill();
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.beginPath();
+            ctx.arc(centerX + 8, centerY - 5, 4, 0, 2 * Math.PI); // Larger secondary highlight
+            ctx.fill();
+
+            // Enhanced eyelashes with varying thickness - LONGER AND THICKER
+            ctx.strokeStyle = 'rgba(255, 107, 107, 0.8)';
+            ctx.lineCap = 'round';
+
+            const lashes = [
+                {startX: centerX - 85, startY: centerY - 45, endX: centerX - 110, endY: centerY - 75, width: 4},
+                {startX: centerX - 45, startY: centerY - 57, endX: centerX - 55, endY: centerY - 85, width: 3},
+                {startX: centerX, startY: centerY - 60, endX: centerX, endY: centerY - 90, width: 5},
+                {startX: centerX + 45, startY: centerY - 57, endX: centerX + 55, endY: centerY - 85, width: 3},
+                {startX: centerX + 85, startY: centerY - 45, endX: centerX + 110, endY: centerY - 75, width: 4},
+                {startX: centerX - 70, startY: centerY + 52, endX: centerX - 85, endY: centerY + 80, width: 3},
+                {startX: centerX + 70, startY: centerY + 52, endX: centerX + 85, endY: centerY + 80, width: 3}
+            ];
+
+            lashes.forEach(lash => {
+                ctx.lineWidth = lash.width;
+                ctx.beginPath();
+                ctx.moveTo(lash.startX, lash.startY);
+                ctx.lineTo(lash.endX, lash.endY);
+                ctx.stroke();
+            });
+        }
+
+        function drawEnhancedPlayerSilhouettes() {
+            const centerX = canvas.width / 2;
+            const centerY = 520; // Move down to better fill the space
+            const radius = 200; // Even larger radius for better distribution
+            const playerCount = 6;
+
+            // Draw connection lines between players (subtle)
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for (let i = 0; i < playerCount; i++) {
+                const angle = (i / playerCount) * 2 * Math.PI - Math.PI / 2;
+                const x = centerX + Math.cos(angle) * radius;
+                const y = centerY + Math.sin(angle) * radius;
+
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.closePath();
+            ctx.stroke();
+
+            // Draw players
+            for (let i = 0; i < playerCount; i++) {
+                const angle = (i / playerCount) * 2 * Math.PI - Math.PI / 2;
+                const x = centerX + Math.cos(angle) * radius;
+                const y = centerY + Math.sin(angle) * radius;
+
+                // Make one player (impostor) look different
+                const isImpostor = i === 2;
+
+                drawEnhancedPlayerSilhouette(x, y, isImpostor, i);
+            }
+        }
+
+        function drawEnhancedPlayerSilhouette(x, y, isImpostor = false, index = 0) {
+            const size = 45; // Much larger player size
+
+            // Enhanced glow effects - LARGER for bigger players
+            if (isImpostor) {
+                // Multiple glow layers for impostor
+                for (let i = 4; i >= 1; i--) {
+                    const impostorGlow = ctx.createRadialGradient(x, y, 0, x, y, 35 * i);
+                    impostorGlow.addColorStop(0, `rgba(255, 107, 107, ${0.35 / i})`);
+                    impostorGlow.addColorStop(1, 'rgba(255, 107, 107, 0)');
+
+                    ctx.fillStyle = impostorGlow;
+                    ctx.fillRect(x - 35 * i, y - 35 * i, 70 * i, 70 * i);
+                }
+            } else {
+                // Subtle glow for normal players
+                const normalGlow = ctx.createRadialGradient(x, y, 0, x, y, 50);
+                normalGlow.addColorStop(0, 'rgba(255, 255, 255, 0.25)');
+                normalGlow.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+                ctx.fillStyle = normalGlow;
+                ctx.fillRect(x - 50, y - 50, 100, 100);
+            }
+
+            // Player shadow
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.beginPath();
+            ctx.ellipse(x + 2, y + size * 1.5, size * 0.8, size * 0.3, 0, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // Player body with gradient
+            const bodyGradient = ctx.createLinearGradient(x, y - size, x, y + size);
+            if (isImpostor) {
+                bodyGradient.addColorStop(0, '#ff8a8a');
+                bodyGradient.addColorStop(1, '#ff4444');
+            } else {
+                bodyGradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+                bodyGradient.addColorStop(1, 'rgba(200, 200, 200, 0.8)');
+            }
+
+            ctx.fillStyle = bodyGradient;
+
+            // Head with better proportions
+            ctx.beginPath();
+            ctx.arc(x, y - size * 0.8, size * 0.5, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // Body (rectangle with rounded corners fallback)
+            ctx.beginPath();
+            if (ctx.roundRect) {
+                ctx.roundRect(x - size * 0.35, y - size * 0.3, size * 0.7, size * 1.1, size * 0.1);
+            } else {
+                ctx.rect(x - size * 0.35, y - size * 0.3, size * 0.7, size * 1.1);
+            }
+            ctx.fill();
+
+            // Arms
+            ctx.beginPath();
+            if (ctx.roundRect) {
+                ctx.roundRect(x - size * 0.7, y - size * 0.1, size * 0.25, size * 0.7, size * 0.1);
+            } else {
+                ctx.rect(x - size * 0.7, y - size * 0.1, size * 0.25, size * 0.7);
+            }
+            ctx.fill();
+
+            ctx.beginPath();
+            if (ctx.roundRect) {
+                ctx.roundRect(x + size * 0.45, y - size * 0.1, size * 0.25, size * 0.7, size * 0.1);
+            } else {
+                ctx.rect(x + size * 0.45, y - size * 0.1, size * 0.25, size * 0.7);
+            }
+            ctx.fill();
+
+            // Add outline for definition
+            ctx.strokeStyle = isImpostor ? '#cc3333' : 'rgba(150, 150, 150, 0.8)';
+            ctx.lineWidth = 2;
+
+            // Head outline
+            ctx.beginPath();
+            ctx.arc(x, y - size * 0.8, size * 0.5, 0, 2 * Math.PI);
+            ctx.stroke();
+
+            // Add floating elements above players - LARGER
+            if (!isImpostor) {
+                // Question mark with glow
+                const qGlow = ctx.createRadialGradient(x, y - size * 2, 0, x, y - size * 2, 25);
+                qGlow.addColorStop(0, 'rgba(255, 107, 107, 0.5)');
+                qGlow.addColorStop(1, 'rgba(255, 107, 107, 0)');
+
+                ctx.fillStyle = qGlow;
+                ctx.fillRect(x - 25, y - size * 2 - 25, 50, 50);
+
+                ctx.fillStyle = '#ff6b6b';
+                ctx.font = 'bold 36px Arial'; // Much larger
+                ctx.textAlign = 'center';
+                ctx.fillText('?', x, y - size * 1.4);
+            } else {
+                // Mask icon for impostor
+                ctx.fillStyle = '#ffaa00';
+                ctx.font = 'bold 32px Arial'; // Much larger
+                ctx.textAlign = 'center';
+                ctx.fillText('🎭', x, y - size * 1.4);
+            }
+        }
+
+        function addEnhancedMysteryElements() {
+            // Floating words representing the game concept - concentrated at top for "Trust No One" theme
+            const words = [
+                {text: 'TRUST', x: 120, y: 120, size: 24, opacity: 0.6, color: '#ff6b6b'},
+                {text: 'NO ONE', x: 550, y: 140, size: 22, opacity: 0.55, color: '#ff4444'},
+                {text: 'DOUBT', x: 100, y: 200, size: 18, opacity: 0.5, color: '#ff8a8a'},
+                {text: 'DECEIVE', x: 580, y: 220, size: 17, opacity: 0.5, color: '#ffaa00'},
+                {text: 'SUSPECT', x: 150, y: 350, size: 16, opacity: 0.45, color: '#ff6b6b'},
+                {text: 'BETRAY', x: 520, y: 380, size: 15, opacity: 0.4, color: '#ff8a8a'}
+            ];
+
+            ctx.textAlign = 'center';
+            ctx.font = 'bold Arial';
+
+            words.forEach(word => {
+                // Add glow effect to words
+                const wordGlow = ctx.createRadialGradient(word.x, word.y, 0, word.x, word.y, 30);
+                wordGlow.addColorStop(0, `${word.color}40`);
+                wordGlow.addColorStop(1, `${word.color}00`);
+
+                ctx.fillStyle = wordGlow;
+                ctx.fillRect(word.x - 30, word.y - 15, 60, 30);
+
+                ctx.font = `${word.size}px bold Arial`;
+                ctx.fillStyle = word.color;
+                ctx.globalAlpha = word.opacity;
+                ctx.fillText(word.text, word.x, word.y);
+                ctx.globalAlpha = 1;
+            });
+
+            // Enhanced question marks with glow - concentrated at top for mystery theme
+            const questionMarks = [
+                {x: 200, y: 80, size: 32, opacity: 0.5},
+                {x: 480, y: 100, size: 28, opacity: 0.45},
+                {x: 80, y: 180, size: 24, opacity: 0.4},
+                {x: 600, y: 200, size: 26, opacity: 0.4},
+                {x: 150, y: 300, size: 22, opacity: 0.35},
+                {x: 520, y: 320, size: 20, opacity: 0.3},
+                {x: 250, y: 450, size: 18, opacity: 0.25},
+                {x: 420, y: 480, size: 16, opacity: 0.2}
+            ];
+
+            questionMarks.forEach(qm => {
+                // Add glow to question marks
+                const qGlow = ctx.createRadialGradient(qm.x, qm.y, 0, qm.x, qm.y, 20);
+                qGlow.addColorStop(0, 'rgba(255, 107, 107, 0.3)');
+                qGlow.addColorStop(1, 'rgba(255, 107, 107, 0)');
+
+                ctx.fillStyle = qGlow;
+                ctx.fillRect(qm.x - 20, qm.y - 20, 40, 40);
+
+                ctx.font = `${qm.size}px bold Arial`;
+                ctx.fillStyle = `rgba(255, 107, 107, ${qm.opacity})`;
+                ctx.fillText('?', qm.x, qm.y);
+            });
+
+            // Add some exclamation marks for tension - concentrated at top
+            const exclamations = [
+                {x: 580, y: 60, size: 26, opacity: 0.4},
+                {x: 100, y: 250, size: 22, opacity: 0.35},
+                {x: 550, y: 400, size: 18, opacity: 0.3},
+                {x: 120, y: 550, size: 16, opacity: 0.25}
+            ];
+
+            exclamations.forEach(ex => {
+                const exGlow = ctx.createRadialGradient(ex.x, ex.y, 0, ex.x, ex.y, 15);
+                exGlow.addColorStop(0, 'rgba(255, 170, 0, 0.3)');
+                exGlow.addColorStop(1, 'rgba(255, 170, 0, 0)');
+
+                ctx.fillStyle = exGlow;
+                ctx.fillRect(ex.x - 15, ex.y - 15, 30, 30);
+
+                ctx.font = `${ex.size}px bold Arial`;
+                ctx.fillStyle = `rgba(255, 170, 0, ${ex.opacity})`;
+                ctx.fillText('!', ex.x, ex.y);
+            });
+        }
+
+        function addSophisticatedPatterns() {
+            // Hexagonal pattern in background - concentrated at top, fading towards bottom
+            const hexSize = 40;
+            for (let x = -hexSize; x < canvas.width + hexSize; x += hexSize * 1.5) {
+                for (let y = -hexSize; y < 650; y += hexSize * Math.sqrt(3)) { // Only top portion
+                    const offsetX = (y / (hexSize * Math.sqrt(3))) % 2 === 0 ? 0 : hexSize * 0.75;
+                    const opacity = Math.max(0.02, 0.1 * (1 - y / 650)); // Fade opacity towards bottom
+
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
+                    ctx.lineWidth = 1;
+                    drawHexagon(x + offsetX, y, hexSize * 0.3);
+                }
+            }
+
+            // Enhanced corner elements - only top corners for clean bottom
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+
+            // Top corners - more sophisticated shapes
+            ctx.beginPath();
+            ctx.moveTo(30, 30);
+            ctx.lineTo(80, 30);
+            ctx.lineTo(100, 60);
+            ctx.lineTo(80, 90);
+            ctx.lineTo(30, 90);
+            ctx.lineTo(50, 60);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(656, 30);
+            ctx.lineTo(606, 30);
+            ctx.lineTo(586, 60);
+            ctx.lineTo(606, 90);
+            ctx.lineTo(656, 90);
+            ctx.lineTo(636, 60);
+            ctx.closePath();
+            ctx.fill();
+
+            // Add circuit-like connecting lines - only at top for funky effect
+            ctx.strokeStyle = 'rgba(255, 107, 107, 0.2)';
+            ctx.lineWidth = 2;
+
+            // Top curved connecting lines
+            ctx.beginPath();
+            ctx.moveTo(100, 100);
+            ctx.quadraticCurveTo(200, 150, 300, 100);
+            ctx.quadraticCurveTo(400, 50, 500, 100);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(586, 100);
+            ctx.quadraticCurveTo(486, 150, 386, 100);
+            ctx.quadraticCurveTo(286, 50, 186, 100);
+            ctx.stroke();
+
+            // Subtle vertical accent lines - only in upper portion
+            ctx.strokeStyle = 'rgba(255, 107, 107, 0.08)';
+            ctx.lineWidth = 1;
+
+            ctx.beginPath();
+            ctx.moveTo(150, 200);
+            ctx.lineTo(150, 500);
+            ctx.moveTo(536, 200);
+            ctx.lineTo(536, 500);
+            ctx.stroke();
+        }
+
+        function drawHexagon(x, y, size) {
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+                const angle = (i * Math.PI) / 3;
+                const hexX = x + size * Math.cos(angle);
+                const hexY = y + size * Math.sin(angle);
+
+                if (i === 0) {
+                    ctx.moveTo(hexX, hexY);
+                } else {
+                    ctx.lineTo(hexX, hexY);
+                }
+            }
+            ctx.closePath();
+            ctx.stroke();
+        }
+
+        function addFinalGlowEffects() {
+            // Add overall atmospheric glow concentrated at top
+            const atmosphereGradient = ctx.createRadialGradient(canvas.width/2, 300, 0, canvas.width/2, 300, 500);
+            atmosphereGradient.addColorStop(0, 'rgba(255, 107, 107, 0.15)');
+            atmosphereGradient.addColorStop(0.5, 'rgba(255, 107, 107, 0.08)');
+            atmosphereGradient.addColorStop(1, 'rgba(255, 107, 107, 0)');
+
+            ctx.fillStyle = atmosphereGradient;
+            ctx.fillRect(0, 0, canvas.width, 600); // Only top portion
+
+            // Add subtle vignette effect - top focused
+            const vignetteGradient = ctx.createRadialGradient(canvas.width/2, 200, 150, canvas.width/2, 200, 400);
+            vignetteGradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+            vignetteGradient.addColorStop(1, 'rgba(0, 0, 0, 0.15)');
+
+            ctx.fillStyle = vignetteGradient;
+            ctx.fillRect(0, 0, canvas.width, 500); // Only upper portion
+        }
+
+        function downloadImage() {
+            const link = document.createElement('a');
+            link.download = 'the-other-word-preview.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        // Generate preview on page load
+        window.onload = function() {
+            generatePreview();
+        };
+    </script>
+</body>
+</html>

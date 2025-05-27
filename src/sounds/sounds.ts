@@ -1,10 +1,17 @@
-import { Howl } from "howler"
+import { Howl, Howler } from "howler"
+
+// Function to unlock audio context on first user interaction
+export const unlockAudio = () => {
+  if (Howler.ctx && Howler.ctx.state === 'suspended') {
+    Howler.ctx.resume()
+  }
+}
 
 export const sounds = {
-  roundStart: new Howl({ src: ["sounds/roundStart.wav"] }),
+  roundStart: new Howl({ src: ["sounds/roundStart.mp3"] }),
   revealResults: new Howl({ src: ["sounds/revealResults.mp3"] }),
   uiClick: new Howl({ src: ["sounds/UiClick.mp3"] }),
-  scoreEarned: new Howl({ src: ["sounds/scoreEarned.wav"] }),
+  scoreEarned: new Howl({ src: ["sounds/scoreEarned.mp3"] }),
 }
 
 /*

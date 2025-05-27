@@ -205,7 +205,10 @@ export const Results = memo(() => {
           style={{
             opacity: animationStepIdx >= animationStepKeyIndexMap.cta ? 1 : 0,
           }}
-          onClick={() => Rune.showGameOverPopUp()}
+          onClick={() => {
+            sounds.uiClick.play()
+            Rune.showGameOverPopUp()
+          }}
         >
           <div>Show Final Scores</div>
         </ReadyButton>
@@ -219,7 +222,10 @@ export const Results = memo(() => {
                 ? 1
                 : 0,
           }}
-          onClick={() => Rune.actions?.nextRound?.()}
+          onClick={() => {
+            sounds.uiClick.play()
+            Rune.actions?.nextRound?.()
+          }}
         >
           <div>Continue</div>
         </ReadyButton>

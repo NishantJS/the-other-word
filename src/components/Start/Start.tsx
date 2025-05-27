@@ -6,6 +6,7 @@ import styled from "styled-components/macro"
 import logo from "./new-logo.svg"
 import { rel } from "../../style/rel"
 import { PlayerLeavingNotification } from "../Game/PlayerLeavingNotification"
+import { unlockAudio, sounds } from "../../sounds/sounds"
 
 
 export const Start = memo(() => {
@@ -47,14 +48,21 @@ export const Start = memo(() => {
         </PlayerCounter>
 
         <OptionsContainer>
-          <HowToPlayButton onClick={() => setShowHowToPlay(true)}>
+          <HowToPlayButton onClick={() => {
+            sounds.uiClick.play()
+            setShowHowToPlay(true)
+          }}>
             ❓ How to Play
           </HowToPlayButton>
         </OptionsContainer>
 
         <ReadyButton
           disabled={(yourPlayer && yourPlayer.readyToStart) || !hasEnoughPlayers}
-          onClick={() => Rune.actions.setReadyToStart()}
+          onClick={() => {
+            sounds.uiClick.play()
+            unlockAudio()
+            Rune.actions.setReadyToStart()
+          }}
         >
           {!hasEnoughPlayers ?
             `Need ${minPlayers - players.length} more players` :
@@ -65,11 +73,17 @@ export const Start = memo(() => {
 
       {/* How to Play Modal */}
       {showHowToPlay && (
-        <ModalOverlay onClick={() => setShowHowToPlay(false)}>
+        <ModalOverlay onClick={() => {
+          sounds.uiClick.play()
+          setShowHowToPlay(false)
+        }}>
           <ModalContent onClick={(e) => e.stopPropagation()}>
             <ModalHeader>
               <ModalTitle>🎭 How to Play</ModalTitle>
-              <CloseButton onClick={() => setShowHowToPlay(false)}>✕</CloseButton>
+              <CloseButton onClick={() => {
+                sounds.uiClick.play()
+                setShowHowToPlay(false)
+              }}>✕</CloseButton>
             </ModalHeader>
             <ModalBody>
               <GameSection>

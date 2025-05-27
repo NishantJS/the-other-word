@@ -3,6 +3,7 @@ import { $game, $playersInfo } from "../../state/$state"
 import styled, { keyframes } from "styled-components/macro"
 import { memo, useEffect } from "react"
 import { rel } from "../../style/rel"
+import { sounds } from "../../sounds/sounds"
 
 const slideInFromTop = keyframes`
   0% {
@@ -87,13 +88,16 @@ export const PlayerLeavingNotification = memo(() => {
     <NotificationContainer color={getNotificationColor()}>
       <NotificationContent>
         <NotificationIcon>
-          {notification.wasImpostor ? '🎭' : 
+          {notification.wasImpostor ? '🎭' :
            notification.wasCurrentDescriber ? '💬' : '👋'}
         </NotificationIcon>
         <NotificationText>
           {getNotificationMessage()}
         </NotificationText>
-        <CloseButton onClick={() => Rune.actions?.clearPlayerLeavingNotification?.()}>
+        <CloseButton onClick={() => {
+          sounds.uiClick.play()
+          Rune.actions?.clearPlayerLeavingNotification?.()
+        }}>
           ✕
         </CloseButton>
       </NotificationContent>

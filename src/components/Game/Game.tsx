@@ -8,6 +8,9 @@ import { sounds } from "../../sounds/sounds"
 import { EmoteSelector } from "./Describing/EmoteSelector"
 import { Reactions } from "./Describing/Reactions"
 import { PlayerLeavingNotification } from "./PlayerLeavingNotification"
+import { CountdownNew } from "./CountdownNew"
+import { ImpostorResultsNew } from "./Results/ImpostorResultsNew"
+import { Results } from "./Results/Results"
 
 // Enhanced animations
 const fadeIn = keyframes`
@@ -141,7 +144,7 @@ export const Game = memo(() => {
   const renderStageContent = () => {
     switch (currentTurn.stage) {
       case "countdown":
-        return <CountdownContent />
+        return <CountdownNew />
       case "describing":
         return <DescribingContent />
       case "voting":
@@ -152,7 +155,7 @@ export const Game = memo(() => {
           setHasVoted={setHasVoted}
         />
       case "result":
-        return <ResultsContent />
+        return <ImpostorResultsNew />
       default:
         return <div>Unknown game stage</div>
     }
@@ -198,14 +201,6 @@ export const Game = memo(() => {
 })
 
 // Content Components for each stage
-const CountdownContent = memo(() => {
-  return (
-    <StageContainer>
-      <StageTitle>🎮 Get Ready!</StageTitle>
-      <StageSubtitle>The game is about to begin...</StageSubtitle>
-    </StageContainer>
-  )
-})
 
 const DescribingContent = memo(() => {
   const yourPlayer = useAtomValue($yourPlayer)
@@ -218,7 +213,10 @@ const DescribingContent = memo(() => {
       <StageContainer>
         <StageTitle>💬 Your Turn!</StageTitle>
         <StageSubtitle>Describe your word clearly but don't be too specific</StageSubtitle>
-        <ActionButton onClick={() => Rune.actions?.finishDescribing?.()}>
+        <ActionButton onClick={() => {
+          sounds.uiClick.play()
+          Rune.actions?.finishDescribing?.()
+        }}>
           ✓ I'm Done Speaking
         </ActionButton>
       </StageContainer>
@@ -326,72 +324,7 @@ const VotingContent = memo(({ selectedPlayerId, setSelectedPlayerId, hasVoted, s
   )
 })
 
-const ResultsContent = memo(() => {
-  const currentTurn = useAtomValue($currentTurn)
-  const playersInfo = useAtomValue($playersInfo)
-  const players = useAtomValue($players)
-  const game = useAtomValue($game)
-  const yourPlayerId = useAtomValue($yourPlayer)?.id
 
-  const impostorPlayer = Object.entries(playersInfo)
-    .map(([id, info]) => {
-      const gamePlayer = players.find(p => p.id === id)
-
-      return {
-        id,
-        displayName: info?.displayName || 'Player',
-        avatarUrl: info?.avatarUrl || '/images/default-avatar.svg',
-        isImpostor: gamePlayer?.isImpostor || false
-      }
-    })
-    .find(player => player.isImpostor)
-
-  if (!impostorPlayer) return null
-
-  const isImpostorCaught = currentTurn?.impostorCaught
-
-  return (
-    <StageContainer>
-      <StageTitle>
-        {isImpostorCaught ? '🎯 Impostor Found!' : '🎭 Impostor Escaped!'}
-      </StageTitle>
-
-      <ImpostorReveal caught={!!isImpostorCaught}>
-        <ImpostorAvatar src={impostorPlayer.avatarUrl} />
-        <ImpostorInfo>
-          <ImpostorName>
-            {impostorPlayer.id === yourPlayerId ? "You" : impostorPlayer.displayName}
-          </ImpostorName>
-          <ImpostorStatus caught={!!isImpostorCaught}>
-            {isImpostorCaught ? "Caught!" : "Escaped!"}
-          </ImpostorStatus>
-        </ImpostorInfo>
-      </ImpostorReveal>
-
-      <WordReveal>
-        <WordColumn>
-          <WordColumnLabel>Team Word</WordColumnLabel>
-          <WordColumnValue>{game.currentWord}</WordColumnValue>
-        </WordColumn>
-        <WordDivider>vs</WordDivider>
-        <WordColumn>
-          <WordColumnLabel>Impostor Word</WordColumnLabel>
-          <WordColumnValue>{game.impostorWord}</WordColumnValue>
-        </WordColumn>
-      </WordReveal>
-
-      {game.gameOver ? (
-        <ActionButton primary onClick={() => Rune.showGameOverPopUp()}>
-          🏆 View Final Scores
-        </ActionButton>
-      ) : (
-        <ActionButton onClick={() => Rune.actions?.nextRound?.()}>
-          ▶️ Next Round
-        </ActionButton>
-      )}
-    </StageContainer>
-  )
-})
 
 // Styled Components
 const GameContainer = styled.div`

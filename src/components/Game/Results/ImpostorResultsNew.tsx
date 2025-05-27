@@ -122,12 +122,18 @@ export const ImpostorResultsNew = memo(() => {
           <GameOverBadge caught={isImpostorCaught}>
             {gameOverMessage}
           </GameOverBadge>
-          <ActionButton primary onClick={() => Rune.showGameOverPopUp()}>
+          <ActionButton primary onClick={() => {
+            sounds.uiClick.play()
+            Rune.showGameOverPopUp()
+          }}>
             View Final Scores
           </ActionButton>
         </OutcomeSection>
       ) : (
-        <ActionButton onClick={() => Rune.actions?.nextRound?.()}>
+        <ActionButton onClick={() => {
+          sounds.uiClick.play()
+          Rune.actions?.nextRound?.()
+        }}>
           Next Round
         </ActionButton>
       )}

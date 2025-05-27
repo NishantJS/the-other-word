@@ -6,6 +6,7 @@ import { memo, useEffect, useState } from "react"
 import { descriptionDuration } from "../../../logic"
 import { Reactions } from "./Reactions"
 import { EmoteSelector } from "./EmoteSelector"
+import { sounds } from "../../../sounds/sounds"
 
 // Animation keyframes for components
 const fadeIn = keyframes`
@@ -49,7 +50,10 @@ export const Describing = memo(() => {
           <Instruction>Don't be too specific!</Instruction>
         </CompactInstructions>
 
-        <FinishButton onClick={() => Rune.actions?.finishDescribing?.()}>
+        <FinishButton onClick={() => {
+          sounds.uiClick.play()
+          Rune.actions?.finishDescribing?.()
+        }}>
           I'm Done
         </FinishButton>
       </ContentArea>
