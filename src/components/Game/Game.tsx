@@ -280,7 +280,7 @@ const VotingContent = memo(({ selectedPlayerId, setSelectedPlayerId, hasVoted, s
       round: game.round
     })
 
-    sounds.guessButton.play()
+    sounds.uiClick.play()
     setHasVoted(true)
   }
 
@@ -298,7 +298,7 @@ const VotingContent = memo(({ selectedPlayerId, setSelectedPlayerId, hasVoted, s
             onClick={() => {
               if (!hasVoted) {
                 setSelectedPlayerId(player.id)
-                sounds.guessButton.play()
+                sounds.uiClick.play()
               }
             }}
           >

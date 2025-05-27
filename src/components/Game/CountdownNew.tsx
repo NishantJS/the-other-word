@@ -36,7 +36,7 @@ export const CountdownNew = memo(() => {
   const currentTurn = useAtomValue($currentTurn)
 
   useEffect(() => {
-    sounds.countdown.play()
+    sounds.roundStart.play()
   }, [])
 
   if (!currentTurn) return null

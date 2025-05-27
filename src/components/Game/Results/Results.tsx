@@ -62,7 +62,7 @@ export const Results = memo(() => {
 
   useEffect(() => {
     if (animationStepIdx === animationStepKeyIndexMap.newScores) {
-      sounds.scoreIncrease.play()
+      sounds.scoreEarned.play()
     }
   }, [animationStepIdx])
 

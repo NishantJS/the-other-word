@@ -108,7 +108,7 @@ export const Voting = memo(() => {
           });
 
           // Play sound
-          sounds.guessButton.play();
+          sounds.uiClick.play();
 
           // Update local state
           setHasVoted(true);
@@ -151,7 +151,7 @@ export const Voting = memo(() => {
     })
 
     // Enhanced feedback
-    sounds.guessButton.play()
+    sounds.uiClick.play()
     setHasVoted(true)
     setSelectionConfirmed(true)
     setShowConfidenceBoost(true)
@@ -171,7 +171,7 @@ export const Voting = memo(() => {
         });
 
         // Play sound
-        sounds.guessButton.play();
+        sounds.uiClick.play();
 
         // Update local state
         setHasVoted(true);
@@ -229,7 +229,7 @@ export const Voting = memo(() => {
             onClick={() => {
               if (!hasVoted) {
                 setSelectedPlayerId(player.id)
-                sounds.guessButton.play()
+                sounds.uiClick.play()
               }
             }}
           >

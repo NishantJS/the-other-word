@@ -12,7 +12,7 @@ export const EmoteSelector = memo(() => {
 
   const handleToggle = () => {
     setIsOpen(!isOpen)
-    sounds.guessButton.play()
+    sounds.uiClick.play()
   }
 
   const handleSelectEmote = (emoji: string) => {
@@ -28,7 +28,7 @@ export const EmoteSelector = memo(() => {
     }
 
     // Play sound
-    sounds.guessButton.play()
+    sounds.uiClick.play()
 
     // Close the selector
     setIsOpen(false)

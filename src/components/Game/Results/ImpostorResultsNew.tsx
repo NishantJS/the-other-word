@@ -30,7 +30,7 @@ export const ImpostorResultsNew = memo(() => {
 
   // Play sound when results are shown
   useEffect(() => {
-    sounds.endOfTurn.play()
+    sounds.revealResults.play()
   }, [])
 
   if (!currentTurn) return null

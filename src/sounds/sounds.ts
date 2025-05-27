@@ -1,14 +1,15 @@
 import { Howl } from "howler"
 
-// These sounds are unavailable in the open-source version because of licensing reasons
 export const sounds = {
-  correctGuess: new Howl({ src: ["sounds/correctGuess.mp3"] }),
-  countdown: new Howl({ src: ["sounds/countdown.mp3"] }),
-  endOfTurn: new Howl({ src: ["sounds/endOfTurn.mp3"] }),
-  guessButton: new Howl({ src: ["sounds/guessButton.mp3"] }),
-  otherUserCorrectGuess: new Howl({
-    src: ["sounds/otherUserCorrectGuess.mp3"],
-  }),
-  scoreIncrease: new Howl({ src: ["sounds/scoreIncrease.mp3"] }),
-  timer: new Howl({ src: ["sounds/timer.mp3"], loop: true }),
+  roundStart: new Howl({ src: ["sounds/roundStart.wav"] }),
+  revealResults: new Howl({ src: ["sounds/revealResults.mp3"] }),
+  uiClick: new Howl({ src: ["sounds/UiClick.mp3"] }),
+  scoreEarned: new Howl({ src: ["sounds/scoreEarned.wav"] }),
 }
+
+/*
+Race Start Ready go by steel2008 -- https://freesound.org/s/231277/ -- License: Creative Commons 0
+result-8.mp3 by DZeDeNZ -- https://freesound.org/s/522245/ -- License: Creative Commons 0
+VS Button Click 01.mp3 by Vilkas_Sound -- https://freesound.org/s/707038/ -- License: Attribution 4.0
+success_bell by MLaudio -- https://freesound.org/s/511484/ -- License: Creative Commons 0
+*/
